@@ -1,7 +1,8 @@
 """Ingesta piloto: conserva offsets y fuentes, indexa de forma incremental por lotes."""
 import argparse, hashlib, json, os
 import pyarrow.parquet as pq
-from app.core import client, ensure_collection, embed, COLLECTION
+from app.core import client, ensure_collection, COLLECTION
+from app.embeddings import embed
 
 def split(text, size=1000, overlap=150):
     if not 0 <= overlap < size: raise ValueError('overlap debe ser menor que size')

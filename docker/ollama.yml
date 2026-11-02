@@ -1,0 +1,8 @@
+# LLM locales. Los modelos se descargan con `docker compose exec ollama ollama pull <modelo>`.
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports: ["11434:11434"]
+    volumes: [ollama_data:/root/.ollama]
+volumes:
+  ollama_data:

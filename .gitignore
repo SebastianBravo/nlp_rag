@@ -1,8 +1,19 @@
 .env
 __pycache__/
 .pytest_cache/
+.ruff_cache/
 .venv/
 .idea/
-data/*.parquet
-reports/*.jsonl
+.ipynb_checkpoints/
+
+# Datos: el corpus y sus derivados no se versionan. Solo data/README.md y listas de IDs en data/samples/.
+data/**
+!data/README.md
+!data/samples/
+!data/samples/*.txt
+!data/samples/*.json
+
+# Reportes: se versionan agregados (reports/eda, reports/chunking, reports/eval).
+# Las salidas crudas por ejecución pueden contener texto del corpus.
 reports/*.csv
+reports/**/*.jsonl

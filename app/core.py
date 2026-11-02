@@ -1,18 +1,9 @@
 """Referencia inicial, no sustituto del diseño y la experimentación estudiantil."""
 import os
-from functools import lru_cache
 from pymilvus import MilvusClient, DataType
-from sentence_transformers import SentenceTransformer
+from app.embeddings import embed
 
-COLLECTION = os.getenv('MILVUS_COLLECTION', 'rag_demo_bge_small_v1')
-
-@lru_cache(maxsize=1)
-def encoder():
-    return SentenceTransformer(os.getenv('EMBEDDING_MODEL', 'intfloat/multilingual-e5-small'))
-
-def embed(texts, kind='passage'):
-    prefix = 'query: ' if kind == 'query' else 'passage: '
-    return encoder().encode([prefix + t for t in texts], normalize_embeddings=True).tolist()
+COLLECTION = os.getenv('MILVUS_COLLECTION', 'rag_e5small_char1000_v1')
 
 def client():
     return MilvusClient(uri=os.getenv('MILVUS_URI','http://milvus:19530'))

@@ -1,0 +1,7 @@
+# Incluye api.txt: pipeline y api cargan el encoder con las mismas versiones (app/embeddings.py).
+-r api.txt
+pyarrow>=17,<24
+pandas>=2.2,<3
+# Versión exacta: el catálogo con tamaños y sha256 del corpus viene dentro del paquete.
+open_corpus_co_es==0.1.1a4
+pytest>=8,<10
