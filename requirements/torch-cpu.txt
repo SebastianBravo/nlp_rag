@@ -1,0 +1,4 @@
+# Solo para las imágenes Docker, antes de api.txt: los contenedores no usan GPU y la rueda de PyPI
+# trae CUDA (la imagen pasaba de ~1,5 GB a ~10 GB). En local, torch llega por sentence-transformers.
+--index-url https://download.pytorch.org/whl/cpu
+torch>=2.4,<3

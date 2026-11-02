@@ -1,0 +1,13 @@
+# Cada Dockerfile copia solo lo que necesita; esto evita enviar datos, entornos y secretos al build.
+.git
+.env
+.venv
+.idea
+data/
+reports/
+notebooks/
+docs/
+*.md
+**/__pycache__
+.pytest_cache
+.ruff_cache

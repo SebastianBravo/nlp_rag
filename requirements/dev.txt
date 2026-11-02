@@ -1,0 +1,6 @@
+# Entorno local de exploración: lo de las imágenes más herramientas que no van en Docker.
+-r pipeline.txt
+-r frontend.txt
+jupyterlab>=4.6,<5
+ipykernel>=7.4,<8
+ruff>=0.17,<0.18

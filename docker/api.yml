@@ -1,0 +1,13 @@
+# FastAPI: recuperación en Milvus y generación con Ollama. Las rutas son relativas a esta carpeta.
+services:
+  api:
+    build: {context: .., dockerfile: docker/api.Dockerfile}
+    env_file: ../.env
+    ports: ["8000:8000"]
+    depends_on:
+      milvus: {condition: service_healthy}
+      ollama: {condition: service_started}
+    volumes: ["../data:/work/data", "../reports:/work/reports", "hf_cache:/root/.cache/huggingface"]
+volumes:
+  # Pesos de Hugging Face compartidos con `pipeline`: ambos usan exactamente el mismo encoder.
+  hf_cache:

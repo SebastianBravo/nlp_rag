@@ -1,0 +1,9 @@
+# Streamlit: interfaz que consulta la API.
+services:
+  frontend:
+    build: {context: .., dockerfile: docker/frontend.Dockerfile}
+    env_file: ../.env
+    environment:
+      API_URL: http://api:8000
+    ports: ["8501:8501"]
+    depends_on: [api]

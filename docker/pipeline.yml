@@ -1,0 +1,11 @@
+# Trabajos batch (descarga, perfilado, chunking, ingesta, evaluación). No arranca con `up`; se ejecuta con:
+#   docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
+# La ingesta necesita Milvus en marcha (`docker compose up -d`).
+services:
+  pipeline:
+    build: {context: .., dockerfile: docker/pipeline.Dockerfile}
+    profiles: [tools]
+    env_file: ../.env
+    volumes: ["../data:/work/data", "../reports:/work/reports", "../configs:/work/configs", "hf_cache:/root/.cache/huggingface"]
+volumes:
+  hf_cache:
