@@ -1,64 +1,207 @@
-# Taller de RAG con Milvus: repositorio demostrativo
+# Asistente RAG con Milvus y LLM locales
 
-Este repositorio forma parte del taller de generación aumentada por recuperación (RAG) de la Pontificia Universidad Javeriana. Es el punto de partida para las actividades prácticas de ingesta, recuperación, generación y evaluación del taller.
+Asistente de preguntas y respuestas con generación aumentada por recuperación (RAG) sobre un corpus de prensa digital y publicaciones de Bluesky. Los fragmentos relevantes se recuperan en Milvus y la respuesta la genera un LLM local servido por Ollama, al que se le pide citar la evidencia que usa. Todo corre en Docker Compose, sin APIs de pago.
 
-**Proyecto base académico (scaffold), no solución terminada ni rendimiento certificado.** Únicamente Milvus; frontend Streamlit; FastAPI; Ollama local; Python y Docker Compose. Se deben descargar imágenes y pesos de modelos gratuitos, sin API de pago. Por compatibilidad, verificar imágenes disponibles y licencias de cada modelo antes de la clase.
+Proyecto académico de la Maestría en Inteligencia Artificial, Pontificia Universidad Javeriana.
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+  C[(documentos_rag.parquet)] --> P[pipeline<br/>chunking + embeddings]
+  P --> M[(Milvus)]
+  U((Usuario)) --> F[frontend<br/>Streamlit]
+  F --> A[api<br/>FastAPI]
+  A -- recuperación --> M
+  A -- generación --> O[Ollama]
+```
+
+| Servicio | Rol | Puerto local |
+|---|---|---|
+| `milvus` | Base de datos vectorial (standalone). WebUI en `/webui` | 19530, 9091 |
+| `etcd`, `minio` | Metadatos y almacenamiento de objetos de Milvus. Consola de MinIO en 9001 | 9001 |
+| `attu` | Interfaz para inspeccionar colecciones de Milvus | 3000 |
+| `ollama` | LLM locales | 11434 |
+| `api` | FastAPI: recuperación y generación | 8000 |
+| `frontend` | Interfaz Streamlit | 8501 |
+| `pipeline` | Trabajos batch (descarga, ingesta, pruebas). Perfil `tools`: no arranca con `up` | — |
+
+`docker-compose.yml` solo incluye los archivos de `docker/`, uno por conjunto de servicios: `milvus.yml` (milvus, etcd, minio, attu), `ollama.yml`, `api.yml`, `frontend.yml` y `pipeline.yml`. Cada servicio propio tiene su Dockerfile en `docker/` y su lista de dependencias en `requirements/`.
+
+El encoder (`intfloat/multilingual-e5-small` por defecto) se carga desde un único módulo, `app/embeddings.py`, que usan tanto `api` como `pipeline`. Ambos servicios comparten el volumen `hf_cache` con los pesos del modelo, así que las consultas y los pasajes se codifican exactamente igual.
 
 ## Requisitos
 
-Docker Engine/Compose v2 (2.20 o superior, por `include`), al menos 16 GB RAM recomendados para la pila completa (depende de hardware y modelos), espacio para embeddings, datos y pesos. Puede ser mayor a escala completa; empezar por una muestra.
+- Docker Engine con Compose 2.20 o superior (por `include`).
+- RAM: se recomiendan 16 GB para la pila completa. Depende del LLM elegido.
+- Disco: unos 20 GB para imágenes, modelos y datos (medido en macOS con Apple Silicon y `qwen2.5:1.5b`).
 
-`docker-compose.yml` solo incluye los archivos de `docker/`, uno por conjunto de servicios, cada uno con su Dockerfile:
+## Puesta en marcha
 
-| Archivo | Servicios |
+```bash
+cp .env.example .env
+docker compose up -d --build
+
+# Corpus: descarga, verifica el sha256 y no sobrescribe sin --force
+docker compose --profile tools run --rm pipeline python -m scripts.download_corpus
+
+# LLM por defecto
+docker compose exec ollama ollama pull qwen2.5:1.5b
+
+# Ingesta piloto en Milvus (primeros 500 documentos)
+docker compose --profile tools run --rm pipeline python -m scripts.ingest --input data/documentos_rag.parquet --limit 500
+```
+
+Después:
+
+- Interfaz: http://localhost:8501
+- Documentación de la API: http://localhost:8000/docs
+- Attu: http://localhost:3000. Conectar a `milvus:19530`, sin usuario ni contraseña.
+- WebUI de Milvus: http://localhost:9091/webui/
+
+## Configuración
+
+Las variables se leen de `.env` (plantilla en `.env.example`):
+
+| Variable | Uso |
 |---|---|
-| `docker/milvus.yml` | Milvus, etcd, MinIO y Attu (http://localhost:3000) |
-| `docker/ollama.yml` | Ollama |
-| `docker/api.yml` | API FastAPI |
-| `docker/frontend.yml` | Frontend Streamlit |
-| `docker/pipeline.yml` | Trabajos batch (perfil `tools`; no arranca con `up`) |
+| `MILVUS_URI` | Dirección de Milvus |
+| `MILVUS_COLLECTION` | Colección donde se indexa y se busca. El nombre identifica encoder y chunking, p. ej. `rag_e5small_char1000_v1` |
+| `EMBEDDING_MODEL` | Modelo de Sentence Transformers |
+| `EMBEDDING_QUERY_PREFIX`, `EMBEDDING_PASSAGE_PREFIX` | Prefijos de consulta y pasaje (`"query: "` y `"passage: "` para E5). Van entre comillas para conservar el espacio final |
+| `EMBEDDING_NORMALIZE` | Normalización L2 de los vectores (`true` o `false`) |
+| `OLLAMA_URL` | Dirección de Ollama |
+| `MAX_CONTEXT_CHARS` | Máximo de caracteres de contexto que se envían al LLM |
+| `LLM_MODEL` | Reservada. Hoy el modelo se elige en cada petición (`model`), con `qwen2.5:1.5b` por defecto |
 
-## Inicio
+Si cambia el encoder, sus prefijos, la normalización o la estrategia de chunking, los vectores dejan de ser comparables. En ese caso hay que usar otra colección y regenerar los embeddings; nunca se mezclan vectores de dos configuraciones en una colección.
 
-1. `cp .env.example .env` (Windows: `copy .env.example .env`).
-2. `docker compose up -d --build`.
-3. Descargar el corpus (verifica el sha256 y no sobrescribe sin `--force`): `docker compose --profile tools run --rm pipeline python -m scripts.download_corpus`
-4. `docker compose exec ollama ollama pull qwen2.5:1.5b`
-5. `docker compose --profile tools run --rm pipeline python -m scripts.ingest --input data/documentos_rag.parquet --limit 500`
-6. Abrir http://localhost:8501, documentación API http://localhost:8000/docs.
-7. Comparadores opcionales: `docker compose exec ollama ollama pull llama3.2:1b`, `llama3.2:3b`, `gemma2:2b`.
+## Pipeline
 
-Pruebas: `docker compose --profile tools run --rm pipeline pytest -q`. Entorno local de exploración (Python 3.12): `python3.12 -m venv .venv && .venv/bin/pip install -r requirements/dev.txt`.
+Los trabajos batch corren en el contenedor `pipeline`, que monta `./data`, `./reports` y `./configs`:
 
-**Importante:** los ejemplos son candidatos sujetos a licencias/recursos disponibles. El encoder se configura en `.env` (`EMBEDDING_MODEL`, `EMBEDDING_QUERY_PREFIX`, `EMBEDDING_PASSAGE_PREFIX`, `EMBEDDING_NORMALIZE`); los prefijos `query:` / `passage:` corresponden a E5, el modelo predeterminado. Al cambiar el encoder, sus prefijos o la normalización se debe cambiar el nombre de la colección, rehacer embeddings y validar la dimensión.
+```bash
+docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
+```
 
-## Endpoints
+| Tarea | Qué hace |
+|---|---|
+| `download_corpus` | Descarga `dragons_rag` con `open_corpus_co_es`, verifica tamaño y sha256 contra el catálogo y lo copia sin modificar a `data/documentos_rag.parquet`. Opciones: `--output`, `--force` |
+| `ingest` | Ingesta piloto: chunking por caracteres (1000 con solapamiento de 150), embeddings y `upsert` idempotente en Milvus. Opciones: `--limit`, `--chunk-size`, `--overlap`, `--batch-size` |
 
-- `GET /health`: disponibilidad de API (no prueba dependencia).
-- `POST /retrieve`: chunks recuperados.
-- `POST /ask`: respuesta, modelo, evidencia y latencia. JSON `{"query":"¿Qué señalan los documentos?","model":"qwen2.5:1.5b","k":5}`.
+La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
 
-## Diseño y limitaciones deliberadas
+## API
 
-- Esqueleto funcional en condiciones compatibles, **no ejecutado end-to-end en este entorno**.
-- Chunking inicial por caracteres con solapamiento; estudiantes deben investigar tokenizer, límites, distribución y compararlo con chunking semántico.
-- Indexación piloto idempotente por `chunk_id` con `upsert`; falta checkpoint robusto de procesamiento, reintentos y control de lotes grandes.
-- Modelo de embedding fijo para comparar generadores sin sesgo de recuperación. Para ablations de embedding, colecciones separadas.
-- Metadatos base y offsets; estudiantes ampliarán filtros, control de calidad, deduplicación, reranking, instrumentación y seguridad.
-- Se guarda texto en Milvus por simplicidad educativa; evaluar limites y almacenamiento alterno para producción.
-- **No publicar documentos ni datos personales** en GitHub: publicar código, instrucciones, muestras autorizadas y artefactos no sensibles.
-- El corpus incluye publicaciones sociales y noticias: distinguir alegaciones, atribuciones y evidencia; no equiparar cobertura con veracidad.
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/health` | Disponibilidad de la API (no comprueba Milvus ni Ollama) |
+| `POST` | `/retrieve` | Fragmentos recuperados con su score y metadatos |
+| `POST` | `/ask` | Respuesta del LLM, modelo, evidencia y latencia |
 
-## Propuesta de ramas y entregas
+Cuerpo de `/retrieve` y `/ask`:
 
-`main` infraestructura; `feature/ingesta`, `feature/retrieval`, `feature/ui`, `feature/evaluacion`; abrir PR con pruebas y resultados. Entregar commits, instrucciones desde cero, matriz de experimentos, benchmark, informe, demo y registro de equipo/hardware.
+```json
+{"query": "¿Qué señalan los documentos sobre el tema?", "model": "qwen2.5:1.5b", "k": 5, "temperature": 0.0}
+```
+
+`query` necesita al menos 3 caracteres, `k` va de 1 a 15 y `temperature` de 0 a 1. `/retrieve` ignora `model` y `temperature`. Cada fragmento de la evidencia trae `chunk_id`, `score`, `text`, `document_id`, `title`, `url`, `collection_name`, `source` y `position` (offset en caracteres sobre el texto original).
+
+## Modelos LLM
+
+```bash
+docker compose exec ollama ollama pull llama3.2:1b   # también llama3.2:3b, gemma2:2b
+docker compose exec ollama ollama list
+docker compose exec ollama ollama rm <modelo>
+```
+
+El selector de la interfaz ofrece `qwen2.5:1.5b`, `llama3.2:1b`, `llama3.2:3b` y `gemma2:2b`. Si se pide un modelo que no se ha descargado, la API responde 503 con el 404 de Ollama en el detalle.
+
+## Datos
+
+El corpus es `dragons_rag` (versión 2026-10-19) del paquete [`open_corpus_co_es`](https://puj-nlp.github.io/open_corpus_co_es/). Según su catálogo tiene 169.248 documentos y 33 columnas: 64.670 publicaciones de Bluesky, 103.380 noticias de Media Cloud y 1.198 de GDELT. El script de descarga verifica el sha256 (`f4a669f1…b181728`) e informa el número de filas.
+
+Reglas de datos:
+
+- El corpus y sus derivados no se versionan. De `data/` solo se versionan `README.md` y las listas de IDs de `data/samples/`.
+- `reports/` contiene solo agregados (conteos, percentiles, figuras): ni texto del corpus, ni handles de Bluesky, ni nombres de personas.
+- El Parquet original nunca se modifica. Las limpiezas producen artefactos nuevos.
+- Los campos de adquisición (palabras clave, `source`) describen cómo se recolectó el documento; no son etiquetas semánticas.
+
+## Estructura
+
+```
+app/            servicios en línea: api.py, frontend.py, core.py (Milvus), embeddings.py (encoder)
+pipeline/       lógica batch reutilizable y testeable
+scripts/        CLI que se ejecutan en el contenedor pipeline (python -m scripts.<tarea>)
+configs/        parámetros YAML de las etapas
+docker/         compose por conjunto de servicios y un Dockerfile por servicio
+requirements/   dependencias por imagen (api, frontend, pipeline, torch-cpu) y dev.txt para local
+tests/          pruebas con pytest
+data/           corpus y derivados (no se versiona, salvo samples/)
+reports/        resultados agregados
+docs/           protocolo de evaluación (EVALUACION.md)
+```
+
+## Desarrollo local y pruebas
+
+```bash
+# Pruebas en Docker (referencia)
+docker compose --profile tools run --rm pipeline pytest -q
+
+# Entorno local de exploración (Python 3.12, igual que las imágenes)
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r requirements/dev.txt
+pytest -q
+```
+
+El entorno local sirve para explorar. Toda cifra que se reporte sale de lo que corre en Docker.
+
+## Estado actual y limitaciones
+
+La infraestructura está lista: servicios separados en Docker, contenedor de pipeline, descarga verificada del corpus y encoder compartido entre API y pipeline. Lo que sigue es el perfilado y la calidad del corpus, el chunking por tokens, el ajuste de Milvus, la evaluación con un gold estándar propio y la comparación de al menos tres LLM. El protocolo de evaluación está en [`docs/EVALUACION.md`](docs/EVALUACION.md).
+
+Limitaciones actuales:
+
+- El chunking piloto es por caracteres; no tiene en cuenta el límite de 512 tokens del encoder.
+- La colección usa `AUTOINDEX` con métrica coseno y guarda el texto de cada fragmento en Milvus.
+- El contexto que se envía al LLM se recorta por caracteres, no por tokens.
+- `/health` no comprueba las dependencias.
+- La imagen de Ollama usa la etiqueta `latest`. Las demás imágenes de terceros tienen versión fija, pero aún sin digest.
+
+## Uso responsable
+
+- El corpus mezcla publicaciones en redes sociales y noticias. Hay que distinguir alegaciones, atribuciones y evidencia, y no equiparar cobertura con veracidad.
+- Las respuestas del asistente deben contrastarse con las fuentes originales que cita.
+- No se publican documentos del corpus ni datos personales en el repositorio.
 
 ## Reproducibilidad
 
-Fijar versiones y digests de imágenes finales, registrar sha256 del Parquet, semilla, nombres/versiones/hashes de los modelos, hardware, cuantización, parámetros de inferencia, tamaños de chunk, k, tiempos por etapa, subconjunto y selección aleatoria estratificada. La descarga del Parquet es un paso explícito (`scripts.download_corpus`), y el repositorio no provee gold estándar.
+Cada experimento debe registrar:
 
-## Contacto
+- el sha256 del Parquet;
+- la semilla;
+- la versión y el digest de las imágenes;
+- el nombre, la versión, el hash y la cuantización de cada modelo;
+- los parámetros de inferencia, el tamaño de chunk y `k`;
+- los tiempos por etapa;
+- el hardware.
 
-- **Luis Gabriel Moreno Sandoval**
-- Pontificia Universidad Javeriana
-- Correo institucional: [morenoluis@javeriana.edu.co](mailto:morenoluis@javeriana.edu.co)
+Las muestras deben obtenerse con muestreo estratificado y semilla fija.
+
+## Solución de problemas
+
+| Síntoma | Causa y solución |
+|---|---|
+| `/ask` responde 503 con `404 Client Error ... /api/generate` | El modelo no está descargado en Ollama: `docker compose exec ollama ollama pull <modelo>` |
+| `evidence` llega vacío | La colección de `MILVUS_COLLECTION` no existe o está vacía. Hay que ejecutar la ingesta o revisar el nombre en `.env` |
+| El build falla con `No space left on device` | Falta espacio en la VM de Docker. Liberar la caché con `docker builder prune` |
+| Un cambio en `pipeline/` o `scripts/` no se refleja | El código va dentro de la imagen: `docker compose --profile tools build pipeline` |
+
+## Flujo de trabajo
+
+- **`main`:** siempre funciona. Solo entra lo que construye, levanta y pasa las pruebas.
+- **Ramas:** una rama corta por etapa (`feature/fase-0-fundaciones`, `feature/fase-a-perfilado`, …). El gold estándar avanza en paralelo en `feature/gold-estandar`.
+- **Experimentos:** no van en ramas. Se parametrizan en `configs/` y sus resultados agregados van a `reports/`.
+- **Integración:** cada rama entra por PR con merge commit (`--no-ff`). Cada hito lleva un tag (`fase-0`, `fase-a`, …, `entrega-final`).
+- **Commits:** en formato Conventional Commits con descripción en español (`feat: …`, `fix: …`, `docs: …`, `test: …`).
