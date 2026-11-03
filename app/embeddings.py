@@ -27,7 +27,25 @@ def settings():
 def encoder():
     return SentenceTransformer(settings()['model'])
 
-def embed(texts, kind='passage'):
+def _with_prefix(texts, kind):
     cfg = settings()
     prefix = cfg['query_prefix'] if kind == 'query' else cfg['passage_prefix']
-    return encoder().encode([prefix + t for t in texts], normalize_embeddings=cfg['normalize']).tolist()
+    return [prefix + t for t in texts], cfg
+
+def embed(texts, kind='passage'):
+    prefixed, cfg = _with_prefix(texts, kind)
+    return encoder().encode(prefixed, normalize_embeddings=cfg['normalize']).tolist()
+
+def count_tokens(texts, kind='passage'):
+    """Tokens que procesa el encoder por texto: prefijo, texto y tokens especiales, sin truncar.
+
+    Es la misma medida para el perfilado del corpus y para los chunks: un valor mayor que
+    `max_tokens()` significa que el encoder truncaría el texto en silencio.
+    """
+    prefixed, _ = _with_prefix(texts, kind)
+    encoded = encoder().tokenizer(prefixed, add_special_tokens=True, truncation=False, verbose=False)
+    return [len(ids) for ids in encoded['input_ids']]
+
+def max_tokens():
+    """Tope de tokens del encoder; lo que lo supera se trunca al codificar."""
+    return encoder().max_seq_length

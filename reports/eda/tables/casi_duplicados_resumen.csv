@@ -1,0 +1,4 @@
+collection_name,documents,with_near_duplicate,with_any_duplicate,share_near_duplicate,share_any_duplicate
+bluesky_posts,3821,123,385,0.0321905,0.100759
+url_crawls,6179,14,176,0.00226574,0.0284836
+total,10000,137,561,0.0137,0.0561

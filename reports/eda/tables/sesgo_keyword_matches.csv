@@ -1,0 +1,4 @@
+collection_name,metric,n,mean,min,p5,p50,p95,p99,max
+bluesky_posts,keyword_matches_length,64670,0.342013,0,0,0,2,3,8
+url_crawls,keyword_matches_length,104578,4.1763,0,0,4,9,11,16
+total,keyword_matches_length,169248,2.71121,0,0,2,9,11,16

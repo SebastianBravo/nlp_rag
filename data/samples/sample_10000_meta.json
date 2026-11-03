@@ -1,0 +1,126 @@
+{
+  "name": "sample_10000",
+  "size": 10000,
+  "seed": 42,
+  "created_at_utc": "2026-11-02T23:59:03+00:00",
+  "parquet": "documentos_rag.parquet",
+  "parquet_sha256": "f4a669f17eaedd357f72b70c2192e685b6d534a94f6ffaeadbced7290b181728",
+  "strata": [
+    "collection_name",
+    "language_base"
+  ],
+  "min_share": 0.01,
+  "nested_in": [],
+  "distribution": [
+    {
+      "stratum": "url_crawls|es",
+      "corpus_documents": 63420,
+      "sample_documents": 3747,
+      "corpus_share": 0.37471639251276234,
+      "sample_share": 0.3747,
+      "diff": -1.639251276236431e-05
+    },
+    {
+      "stratum": "bluesky_posts|en",
+      "corpus_documents": 45773,
+      "sample_documents": 2705,
+      "corpus_share": 0.270449281527699,
+      "sample_share": 0.2705,
+      "diff": 5.0718472301036766e-05
+    },
+    {
+      "stratum": "url_crawls|en",
+      "corpus_documents": 36909,
+      "sample_documents": 2181,
+      "corpus_share": 0.21807643221781056,
+      "sample_share": 0.2181,
+      "diff": 2.3567782189426456e-05
+    },
+    {
+      "stratum": "bluesky_posts|desconocido",
+      "corpus_documents": 13137,
+      "sample_documents": 776,
+      "corpus_share": 0.07761982416335791,
+      "sample_share": 0.0776,
+      "diff": -1.982416335791215e-05
+    },
+    {
+      "stratum": "url_crawls|hu",
+      "corpus_documents": 4062,
+      "sample_documents": 240,
+      "corpus_share": 0.02400028360748724,
+      "sample_share": 0.024,
+      "diff": -2.836074872378247e-07
+    },
+    {
+      "stratum": "bluesky_posts|es",
+      "corpus_documents": 3488,
+      "sample_documents": 206,
+      "corpus_share": 0.020608810739270185,
+      "sample_share": 0.0206,
+      "diff": -8.81073927018472e-06
+    },
+    {
+      "stratum": "bluesky_posts|otro",
+      "corpus_documents": 2201,
+      "sample_documents": 130,
+      "corpus_share": 0.013004584987710342,
+      "sample_share": 0.013,
+      "diff": -4.58498771034252e-06
+    },
+    {
+      "stratum": "url_crawls|otro",
+      "corpus_documents": 187,
+      "sample_documents": 11,
+      "corpus_share": 0.0011048875023633958,
+      "sample_share": 0.0011,
+      "diff": -4.887502363395751e-06
+    },
+    {
+      "stratum": "bluesky_posts|hu",
+      "corpus_documents": 71,
+      "sample_documents": 4,
+      "corpus_share": 0.0004195027415390433,
+      "sample_share": 0.0004,
+      "diff": -1.9502741539043295e-05
+    }
+  ],
+  "representativeness": [
+    {
+      "check": "proporciones collection_name",
+      "group": "total",
+      "value": 2.0041595765185605e-06,
+      "p_value": null
+    },
+    {
+      "check": "proporciones language_base",
+      "group": "total",
+      "value": 7.428625449040771e-05,
+      "p_value": null
+    },
+    {
+      "check": "KS char_count",
+      "group": "bluesky_posts",
+      "value": 0.013375570867772413,
+      "p_value": 0.5341158982759386
+    },
+    {
+      "check": "mediana char_count muestra/corpus",
+      "group": "bluesky_posts",
+      "value": 0.9870689655172413,
+      "p_value": null
+    },
+    {
+      "check": "KS char_count",
+      "group": "url_crawls",
+      "value": 0.017058458494200845,
+      "p_value": 0.06629534629790135
+    },
+    {
+      "check": "mediana char_count muestra/corpus",
+      "group": "url_crawls",
+      "value": 1.0146831530139104,
+      "p_value": null
+    }
+  ]
+}

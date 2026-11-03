@@ -86,7 +86,8 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 
 | Tarea | Qué hace |
 |---|---|
-| `download_corpus` | Descarga `dragons_rag` con `open_corpus_co_es`, verifica tamaño y sha256 contra el catálogo y lo copia sin modificar a `data/documentos_rag.parquet`. Opciones: `--output`, `--force` |
+| `download_corpus` | Descarga `dragons_rag` con `open_corpus_co_es`, verifica tamaño y sha256 contra el catálogo y lo copia sin modificar a `data/documentos_rag.parquet`, junto con su manifiesto (`data/documentos_rag.manifest.json`). Opciones: `--output`, `--force` |
+| `profile_corpus` | Perfilado del corpus (integridad, longitudes y tokens, idioma, fechas, duplicados, URLs, ruido y sesgos) y muestras estratificadas. Escribe `reports/eda/`, `data/samples/` y artefactos intermedios en `data/eda/` (no versionados). Parámetros en `configs/eda.yaml`; tarda unos 3 minutos |
 | `ingest` | Ingesta piloto: chunking por caracteres (1000 con solapamiento de 150), embeddings y `upsert` idempotente en Milvus. Opciones: `--limit`, `--chunk-size`, `--overlap`, `--batch-size` |
 
 La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
@@ -128,18 +129,21 @@ Reglas de datos:
 - El Parquet original nunca se modifica. Las limpiezas producen artefactos nuevos.
 - Los campos de adquisición (palabras clave, `source`) describen cómo se recolectó el documento; no son etiquetas semánticas.
 
+El perfilado completo (integridad, idioma, fechas, duplicados, ruido, sesgos) y las decisiones que implica están en [`reports/eda/resumen.md`](reports/eda/resumen.md), con su narrativa en [`notebooks/01_exploracion_calidad.ipynb`](notebooks/01_exploracion_calidad.ipynb). Las muestras reproducibles de 2.000 y 10.000 documentos (solo IDs) están en `data/samples/`.
+
 ## Estructura
 
 ```
 app/            servicios en línea: api.py, frontend.py, core.py (Milvus), embeddings.py (encoder)
 pipeline/       lógica batch reutilizable y testeable
 scripts/        CLI que se ejecutan en el contenedor pipeline (python -m scripts.<tarea>)
-configs/        parámetros YAML de las etapas
+configs/        parámetros YAML de las etapas (eda.yaml: perfilado)
+notebooks/      exploración y narrativa; leen los artefactos de reports/, no recalculan
 docker/         compose por conjunto de servicios y un Dockerfile por servicio
 requirements/   dependencias por imagen (api, frontend, pipeline, torch-cpu) y dev.txt para local
 tests/          pruebas con pytest
 data/           corpus y derivados (no se versiona, salvo samples/)
-reports/        resultados agregados
+reports/        resultados agregados (eda/: perfilado del corpus)
 docs/           protocolo de evaluación (EVALUACION.md)
 ```
 
@@ -159,11 +163,11 @@ El entorno local sirve para explorar. Toda cifra que se reporte sale de lo que c
 
 ## Estado actual y limitaciones
 
-La infraestructura está lista: servicios separados en Docker, contenedor de pipeline, descarga verificada del corpus y encoder compartido entre API y pipeline. Lo que sigue es el perfilado y la calidad del corpus, el chunking por tokens, el ajuste de Milvus, la evaluación con un gold estándar propio y la comparación de al menos tres LLM. El protocolo de evaluación está en [`docs/EVALUACION.md`](docs/EVALUACION.md).
+La infraestructura está lista: servicios separados en Docker, contenedor de pipeline, descarga verificada del corpus y encoder compartido entre API y pipeline. El corpus está perfilado y hay muestras reproducibles. Lo que sigue es el chunking por tokens, el ajuste de Milvus, la evaluación con un gold estándar propio y la comparación de al menos tres LLM. El protocolo de evaluación está en [`docs/EVALUACION.md`](docs/EVALUACION.md).
 
 Limitaciones actuales:
 
-- El chunking piloto es por caracteres; no tiene en cuenta el límite de 512 tokens del encoder.
+- El chunking piloto es por caracteres; no tiene en cuenta el límite de 512 tokens del encoder, que supera el 83 % de las noticias.
 - La colección usa `AUTOINDEX` con métrica coseno y guarda el texto de cada fragmento en Milvus.
 - El contexto que se envía al LLM se recorta por caracteres, no por tokens.
 - `/health` no comprueba las dependencias.

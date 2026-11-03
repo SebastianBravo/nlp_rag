@@ -4,4 +4,10 @@ pyarrow>=17,<24
 pandas>=2.2,<3
 # Versión exacta: el catálogo con tamaños y sha256 del corpus viene dentro del paquete.
 open_corpus_co_es==0.1.1a4
+gdown>=5,<7
+pyyaml>=6,<7
+scipy>=1.11,<2
+matplotlib>=3.9,<4
+lingua-language-detector>=2.1,<3
+datasketch>=1.6,<3
 pytest>=8,<10

@@ -2,9 +2,19 @@ import numpy as np
 import pytest
 from app import embeddings
 
+class FakeTokenizer:
+    """Un token por palabra más dos especiales; registra cómo se llamó."""
+    def __init__(self): self.kwargs = None
+    def __call__(self, texts, **kwargs):
+        self.kwargs = kwargs
+        return {'input_ids': [[0] + [1] * len(t.split()) + [2] for t in texts]}
+
 class FakeEncoder:
     """Registra lo que recibiría SentenceTransformer.encode sin descargar el modelo."""
-    def __init__(self): self.calls = []
+    max_seq_length = 512
+    def __init__(self):
+        self.calls = []
+        self.tokenizer = FakeTokenizer()
     def encode(self, texts, normalize_embeddings):
         self.calls.append((texts, normalize_embeddings))
         return np.zeros((len(texts), 3))
@@ -34,6 +44,12 @@ def test_invalid_normalize_flag_fails(fake, monkeypatch):
     monkeypatch.setenv('EMBEDDING_NORMALIZE', 'quizas')
     with pytest.raises(ValueError):
         embeddings.embed(['a'])
+
+def test_count_tokens_includes_prefix_and_special_tokens_without_truncation(fake):
+    assert embeddings.count_tokens(['uno dos tres']) == [6]
+    assert embeddings.count_tokens(['uno'], kind='query') == [4]
+    assert fake.tokenizer.kwargs['truncation'] is False and fake.tokenizer.kwargs['add_special_tokens'] is True
+    assert embeddings.max_tokens() == 512
 
 def test_core_uses_shared_encoder():
     from app import core

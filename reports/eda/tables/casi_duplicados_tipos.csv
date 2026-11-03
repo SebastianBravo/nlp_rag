@@ -1,0 +1,4 @@
+type,pairs,jaccard_median,length_ratio_median,share
+exacto,4031,1,1,0.916553
+mismo_dominio,362,0.9375,0.883721,0.0823101
+otro_dominio,5,0.974269,0.987011,0.00113688

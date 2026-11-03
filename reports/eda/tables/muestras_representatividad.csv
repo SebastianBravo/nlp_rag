@@ -1,0 +1,13 @@
+check,group,value,p_value,sample
+proporciones collection_name,total,0.000102004,,2000
+proporciones language_base,total,0.000174797,,2000
+KS char_count,bluesky_posts,0.0323099,0.401352,2000
+mediana char_count muestra/corpus,bluesky_posts,0.971983,,2000
+KS char_count,url_crawls,0.0293362,0.238955,2000
+mediana char_count muestra/corpus,url_crawls,1.01726,,2000
+proporciones collection_name,total,2.00416e-06,,10000
+proporciones language_base,total,7.42863e-05,,10000
+KS char_count,bluesky_posts,0.0133756,0.534116,10000
+mediana char_count muestra/corpus,bluesky_posts,0.987069,,10000
+KS char_count,url_crawls,0.0170585,0.0662953,10000
+mediana char_count muestra/corpus,url_crawls,1.01468,,10000

@@ -1,0 +1,4 @@
+collection_name,rows,unique_texts,extra_rows,rows_in_duplicate_groups,rows_in_cross_collection_groups,extra_share
+bluesky_posts,64670,56277,8393,9972,0,0.129782
+url_crawls,104578,98200,6378,9233,0,0.060988
+total,169248,154477,14771,19205,0,0.0872743
