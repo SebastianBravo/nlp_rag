@@ -178,3 +178,69 @@ def noise_plot(noise, path):
     ax.set_title('Señales de ruido en el texto')
     ax.legend(loc='lower right')
     return _save(fig, path)
+
+# --- Segmentación (Fase B): un color fijo por estrategia, distinto de los de colección ---
+STRATEGY_COLORS = {'A': '#1baf7a', 'B': '#6250d6'}
+STRATEGY_LABELS = {'A': 'A · ventana de tokens', 'B': 'B · estructura'}
+
+def chunk_tokens_ecdf(chunk_data, max_tokens, budget, path):
+    """Distribución acumulada de tokens del encoder por chunk, un panel por colección y una línea por estrategia."""
+    fig, axes = _figure(9, 4, ncols=2, sharey=True)
+    for ax, collection in zip(axes, COLLECTION_LABELS):
+        for strategy, data in sorted(chunk_data.items()):
+            values = np.sort(data.loc[data['collection_name'] == collection, 'n_tokens'].to_numpy())
+            if not len(values): continue
+            ax.step(values, np.arange(1, len(values) + 1) / len(values), where='post', lw=2,
+                    color=STRATEGY_COLORS.get(strategy, INK_2), label=f'{STRATEGY_LABELS.get(strategy, strategy)} ({len(values):,})'.replace(',', '.'))
+        for t, label in ((budget, f'presupuesto {budget}'), (max_tokens, f'tope {max_tokens}')):
+            ax.axvline(t, color=MUTED, lw=1, ls='--')
+            ax.text(t, 0.5, f'{label} ', rotation=90, ha='right', va='center', color=INK_2, fontsize=8)
+        ax.set_title(COLLECTION_LABELS[collection], fontsize=10)
+        ax.set_xlabel('Tokens por chunk (con prefijo)')
+        ax.legend(loc='upper left', fontsize=8)
+    axes[0].set_ylabel('Chunks con ≤ x tokens')
+    _percent_axis(axes[0].yaxis)
+    fig.suptitle('Tamaño de los chunks en tokens del encoder', x=0.01, ha='left', fontweight='bold', color=INK)
+    fig.tight_layout()
+    return _save(fig, path)
+
+def chunks_per_document_plot(doc_data, path, collection='url_crawls', cap=30):
+    """Distribución de chunks por documento de prensa, por estrategia (los valores mayores que `cap` se agrupan)."""
+    fig, ax = _figure(8, 4)
+    width = 0.42
+    for offset, (strategy, docs) in zip((-width / 2, width / 2), sorted(doc_data.items())):
+        values = docs.loc[docs['collection_name'] == collection, 'n_chunks'].clip(upper=cap)
+        shares = values.value_counts(normalize=True).sort_index()
+        ax.bar(shares.index + offset, shares.to_numpy(), width=width, color=STRATEGY_COLORS.get(strategy, INK_2),
+               label=f'{STRATEGY_LABELS.get(strategy, strategy)} · media {docs.loc[docs["collection_name"] == collection, "n_chunks"].mean():.1f}')
+    ax.set_xlabel(f'Chunks por documento de prensa ({cap} = {cap} o más)')
+    ax.set_ylabel('Documentos')
+    _percent_axis(ax.yaxis)
+    ax.grid(axis='x', visible=False)
+    ax.set_title('Chunks por documento de prensa')
+    ax.legend(loc='upper right')
+    return _save(fig, path)
+
+def strategy_metrics_plot(table, path, collection='total'):
+    """Métricas intrínsecas (proporciones) por estrategia."""
+    metrics = {'mid_sentence_share': 'chunks que cortan una oración', 'removed_share': 'chunks eliminados por duplicados',
+               'overlap_ratio': 'texto repetido por solapamiento', 'boilerplate_excluded_share': 'texto excluido como boilerplate',
+               'single_chunk_docs_share': 'documentos de un solo chunk'}
+    data = table[table['collection_name'] == collection].set_index('strategy')
+    labels = list(metrics.values())
+    fig, ax = _figure(8, 0.6 * len(labels) + 1.2)
+    height = 0.38
+    y = np.arange(len(labels))[::-1]
+    for offset, strategy in zip((height / 2 + 0.01, -height / 2 - 0.01), sorted(data.index)):
+        values = [float(data.loc[strategy, m]) for m in metrics]
+        ax.barh(y + offset, values, height=height, color=STRATEGY_COLORS.get(strategy, INK_2), label=STRATEGY_LABELS.get(strategy, strategy))
+        for yi, value in zip(y + offset, values):
+            ax.annotate(_share_label(value) if value else '0%', (value, yi), xytext=(4, 0), textcoords='offset points',
+                        va='center', fontsize=8, color=INK_2)
+    ax.set_yticks(y, labels)
+    _percent_axis(ax.xaxis)
+    ax.grid(axis='y', visible=False)
+    ax.set_xlabel('Proporción')
+    ax.set_title('Comparación intrínseca de estrategias (todas las colecciones)')
+    ax.legend(loc='lower right')
+    return _save(fig, path)

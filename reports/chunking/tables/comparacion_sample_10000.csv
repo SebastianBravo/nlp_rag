@@ -1,0 +1,7 @@
+strategy,strategy_version,collection_name,documents,documents_without_chunks,chunks,dropped_fragments,chunks_per_doc_mean,chunks_per_doc_p50,chunks_per_doc_p95,chunks_per_doc_max,single_chunk_docs_share,n_tokens_p5,n_tokens_p50,n_tokens_p95,n_tokens_max,share_over_max_tokens,mid_sentence_share,boilerplate_excluded_share,coverage_share,overlap_ratio,chunks_before_dedup,removed,kept,removed_share,chunking_seconds,chunks_per_second
+A,1,bluesky_posts,3821,0,3821,0,1,1,1,1,1,22,61,86,144,0,0,0,0.999999,0,3821,305,3516,0.079822,9.67,3519.7
+A,1,url_crawls,6116,3,30204,1613,4.93852,4,11,374,0.0600065,75,260,261,261,0,0.936995,0.0780902,0.920798,0.119717,30204,289,29915,0.00956827,9.67,3519.7
+A,1,total,9937,3,34025,1613,3.42407,2,9,374,0.421455,48,260,261,261,0,0.831771,0.0759834,0.922935,0.116218,34025,594,33431,0.0174578,9.67,3519.7
+B,1,bluesky_posts,3821,0,3821,0,1,1,1,1,1,22,61,86,144,0,0,0,0.999999,0,3821,305,3516,0.079822,9.38,4123.4
+B,1,url_crawls,6116,3,34871,1617,5.7016,5,13,399,0.0600065,107,222,257,261,0,0.0013765,0.0780902,0.920791,0.164951,34871,468,34403,0.0134209,9.38,4123.4
+B,1,total,9937,3,38692,1617,3.89373,3,11,399,0.421455,55,217,257,261,0,0.00124057,0.0759834,0.922928,0.160129,38692,773,37919,0.0199783,9.38,4123.4

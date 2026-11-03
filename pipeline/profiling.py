@@ -61,13 +61,21 @@ def text_features(df, short_words=5):
         'has_replacement_char': filled.str.contains('�', regex=False),
     })
 
+def normalize_lines(lines):
+    """Normalización de líneas para comparar boilerplate: sin bordes, en minúsculas y con espacios colapsados."""
+    return lines.fillna('').str.strip().str.lower().str.replace(r'\s+', ' ', regex=True)
+
+def hash_lines(normalized):
+    """Hash determinista de 64 bits por línea normalizada (el mismo en el perfilado y en la segmentación)."""
+    return pd.util.hash_pandas_object(normalized, index=False).to_numpy()
+
 def line_hashes(df, min_chars=20):
     """Una fila por documento y línea normalizada distinta (hash de 64 bits), para detectar boilerplate."""
     lines = pd.DataFrame({'document_id': df['document_id'].to_numpy(),
                           'line': df['text'].fillna('').str.split('\n').to_numpy()}).explode('line')
-    norm = lines['line'].fillna('').str.strip().str.lower().str.replace(r'\s+', ' ', regex=True)
+    norm = normalize_lines(lines['line'])
     lines = lines.assign(line=norm)[norm.str.len() >= min_chars]
-    lines['line_hash'] = pd.util.hash_pandas_object(lines['line'], index=False).to_numpy()
+    lines['line_hash'] = hash_lines(lines['line'])
     return lines[['document_id', 'line_hash']].drop_duplicates().reset_index(drop=True)
 
 @lru_cache(maxsize=1)
@@ -387,6 +395,12 @@ def noise_by_domain(features, flags, n=10):
         parts.append(out)
     columns = ['flag', 'url_domain', 'documents', 'flagged', 'share_of_domain', 'share_of_flagged']
     return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=columns)
+
+def boilerplate_lines(lines, domains, min_docs=20):
+    """Pares (dominio, hash de línea) que aparecen en al menos `min_docs` documentos del dominio."""
+    data = lines.merge(domains[['document_id', 'url_domain']], on='document_id')
+    out = data.groupby(['url_domain', 'line_hash']).size().rename('documents').reset_index()
+    return out[out['documents'] >= min_docs].reset_index(drop=True)
 
 def boilerplate(lines, domains, min_docs=20):
     """Líneas que aparecen en al menos `min_docs` documentos del mismo dominio.

@@ -1,7 +1,7 @@
 {
   "run": {
-    "created_at_utc": "2026-11-02T23:59:03+00:00",
-    "duration_seconds": 164.5,
+    "created_at_utc": "2026-11-03T00:45:26+00:00",
+    "duration_seconds": 162.4,
     "parquet": {
       "path": "data/documentos_rag.parquet",
       "sha256": "f4a669f17eaedd357f72b70c2192e685b6d534a94f6ffaeadbced7290b181728",
@@ -256,6 +256,7 @@
     ],
     "work": [
       "data/eda/document_features.parquet",
+      "data/eda/boilerplate_lines.parquet",
       "data/eda/near_duplicate_pairs_10000.parquet"
     ]
   }

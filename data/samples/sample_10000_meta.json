@@ -2,7 +2,7 @@
   "name": "sample_10000",
   "size": 10000,
   "seed": 42,
-  "created_at_utc": "2026-11-02T23:59:03+00:00",
+  "created_at_utc": "2026-11-03T00:45:26+00:00",
   "parquet": "documentos_rag.parquet",
   "parquet_sha256": "f4a669f17eaedd357f72b70c2192e685b6d534a94f6ffaeadbced7290b181728",
   "strata": [

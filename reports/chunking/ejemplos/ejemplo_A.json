@@ -1,0 +1,33 @@
+{
+  "strategy": "A",
+  "params": {
+    "name": "ventana de tokens",
+    "version": 1,
+    "chunk_tokens": 256,
+    "overlap_tokens": 32
+  },
+  "text": "Un consorcio ficticio de municipios anunció un plan para restaurar los humedales de la cuenca alta del río Verde. El proyecto, que todavía no tiene fecha de inicio, propone recuperar cerca de dos mil hectáreas en un plazo de diez años. Sus promotores afirman que la iniciativa reducirá las inundaciones y devolverá hábitat a aves migratorias que dejaron de llegar a la zona.\nSegún el documento técnico, la primera etapa consistirá en un inventario de especies y en la medición de la calidad del agua en veinte puntos de muestreo. La segunda etapa incluirá la siembra de vegetación nativa y la eliminación de canales de drenaje construidos hace décadas para ampliar la frontera agrícola. Los autores reconocen que el costo final dependerá de los acuerdos con los propietarios de los predios.\nLas organizaciones campesinas de la región pidieron que el plan incluya compensaciones para las familias que hoy cultivan en las zonas inundables. Uno de sus voceros explicó que muchas de esas familias llegaron a la cuenca desplazadas por la violencia y que no tienen otra fuente de ingresos. El consorcio respondió que abrirá mesas de diálogo antes de presentar el presupuesto definitivo.\nInvestigadores de una universidad local advirtieron que la restauración solo funcionará si se controla la contaminación aguas arriba. En sus mediciones preliminares encontraron niveles de nitratos superiores a los recomendados en la mitad de los puntos evaluados. También señalaron que la recuperación de las poblaciones de anfibios puede tardar más que el horizonte de diez años previsto en el plan.\nEl debate llegó al concejo regional, donde algunos concejales cuestionaron la ausencia de metas verificables y de un sistema público de seguimiento. Otros defendieron el proyecto como una oportunidad para atraer financiación internacional destinada a la adaptación al cambio climático. La votación sobre el primer desembolso quedó aplazada hasta que el consorcio entregue un cronograma detallado, un análisis de riesgos y un mecanismo de rendición de cuentas que permita a la ciudadanía consultar en línea el avance de cada etapa, los recursos ejecutados, los contratos firmados y los resultados de los monitoreos ambientales que se realicen durante la ejecución del proyecto.\nEste texto es sintético: se escribió solo para ilustrar cómo cada estrategia de segmentación coloca sus fronteras.",
+  "chunks": [
+    {
+      "char_start": 0,
+      "char_end": 1122,
+      "content_tokens": 256,
+      "mid_sentence": true,
+      "n_tokens": 260
+    },
+    {
+      "char_start": 979,
+      "char_end": 2206,
+      "content_tokens": 256,
+      "mid_sentence": true,
+      "n_tokens": 260
+    },
+    {
+      "char_start": 2041,
+      "char_end": 2373,
+      "content_tokens": 66,
+      "mid_sentence": true,
+      "n_tokens": 70
+    }
+  ]
+}
