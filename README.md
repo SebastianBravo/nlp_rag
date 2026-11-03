@@ -88,9 +88,30 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 |---|---|
 | `download_corpus` | Descarga `dragons_rag` con `open_corpus_co_es`, verifica tamaño y sha256 contra el catálogo y lo copia sin modificar a `data/documentos_rag.parquet`, junto con su manifiesto (`data/documentos_rag.manifest.json`). Opciones: `--output`, `--force` |
 | `profile_corpus` | Perfilado del corpus (integridad, longitudes y tokens, idioma, fechas, duplicados, URLs, ruido y sesgos) y muestras estratificadas. Escribe `reports/eda/`, `data/samples/` y artefactos intermedios en `data/eda/` (no versionados). Parámetros en `configs/eda.yaml`; tarda unos 3 minutos |
+| `build_chunks` | Segmenta una muestra con la estrategia A (ventana de 256 tokens con 32 de solapamiento) o B (párrafos y oraciones hasta 256 tokens, con una oración de solapamiento), deduplica conservando procedencias y actualiza la comparación en `reports/chunking/`. Los chunks quedan en `data/chunks/<estrategia>/<muestra>.parquet` (no versionados). Opciones: `--strategy A\|B`, `--sample` (lista de IDs o `full`). Requiere los artefactos de `profile_corpus` |
 | `ingest` | Ingesta piloto: chunking por caracteres (1000 con solapamiento de 150), embeddings y `upsert` idempotente en Milvus. Opciones: `--limit`, `--chunk-size`, `--overlap`, `--batch-size` |
 
 La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
+
+### Reproducir los resultados desde cero
+
+`data/` no se versiona, así que en una máquina nueva los artefactos se regeneran en este orden. Tarda unos 5 minutos, más la descarga del corpus (245 MB) y del encoder (unos 470 MB, solo la primera vez).
+
+```bash
+docker compose --profile tools run --rm pipeline python -m scripts.download_corpus
+docker compose --profile tools run --rm pipeline python -m scripts.profile_corpus
+for n in 2000 10000; do for s in A B; do
+  docker compose --profile tools run --rm pipeline python -m scripts.build_chunks --strategy $s --sample data/samples/sample_${n}_ids.txt
+done; done
+```
+
+Si el entorno reproduce los resultados, `git status` solo muestra cambios en fechas, duraciones y tiempos:
+- `reports/eda/profile.json`;
+- `data/samples/*_meta.json`;
+- `reports/chunking/runs/*.json`;
+- las columnas de tiempo de `reports/chunking/tables/comparacion_*.csv`.
+
+Las demás tablas, las figuras y las listas de IDs salen idénticas.
 
 ## API
 
@@ -137,13 +158,13 @@ El perfilado completo (integridad, idioma, fechas, duplicados, ruido, sesgos) y 
 app/            servicios en línea: api.py, frontend.py, core.py (Milvus), embeddings.py (encoder)
 pipeline/       lógica batch reutilizable y testeable
 scripts/        CLI que se ejecutan en el contenedor pipeline (python -m scripts.<tarea>)
-configs/        parámetros YAML de las etapas (eda.yaml: perfilado)
+configs/        parámetros YAML de las etapas (eda.yaml: perfilado; chunking.yaml: segmentación)
 notebooks/      exploración y narrativa; leen los artefactos de reports/, no recalculan
 docker/         compose por conjunto de servicios y un Dockerfile por servicio
 requirements/   dependencias por imagen (api, frontend, pipeline, torch-cpu) y dev.txt para local
 tests/          pruebas con pytest
 data/           corpus y derivados (no se versiona, salvo samples/)
-reports/        resultados agregados (eda/: perfilado del corpus)
+reports/        resultados agregados (eda/: perfilado del corpus; chunking/: comparación de segmentaciones)
 docs/           protocolo de evaluación (EVALUACION.md)
 ```
 
@@ -156,6 +177,7 @@ docker compose --profile tools run --rm pipeline pytest -q
 # Entorno local de exploración (Python 3.12, igual que las imágenes)
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
+python -m nltk.downloader punkt_tab   # separador de oraciones de la segmentación (ya incluido en la imagen)
 pytest -q
 ```
 
@@ -163,11 +185,11 @@ El entorno local sirve para explorar. Toda cifra que se reporte sale de lo que c
 
 ## Estado actual y limitaciones
 
-La infraestructura está lista: servicios separados en Docker, contenedor de pipeline, descarga verificada del corpus y encoder compartido entre API y pipeline. El corpus está perfilado y hay muestras reproducibles. Lo que sigue es el chunking por tokens, el ajuste de Milvus, la evaluación con un gold estándar propio y la comparación de al menos tres LLM. El protocolo de evaluación está en [`docs/EVALUACION.md`](docs/EVALUACION.md).
+La infraestructura está lista: servicios separados en Docker, contenedor de pipeline, descarga verificada del corpus y encoder compartido entre API y pipeline. El corpus está perfilado, hay muestras reproducibles y dos estrategias de segmentación por tokens comparadas en [`reports/chunking/resumen.md`](reports/chunking/resumen.md). Lo que sigue es indexar esos chunks en Milvus, la evaluación con un gold estándar propio y la comparación de al menos tres LLM. El protocolo de evaluación está en [`docs/EVALUACION.md`](docs/EVALUACION.md).
 
 Limitaciones actuales:
 
-- El chunking piloto es por caracteres; no tiene en cuenta el límite de 512 tokens del encoder, que supera el 83 % de las noticias.
+- La API y `ingest` todavía usan el chunking piloto por caracteres. Las estrategias por tokens de `build_chunks` se indexarán en la fase de Milvus.
 - La colección usa `AUTOINDEX` con métrica coseno y guarda el texto de cada fragmento en Milvus.
 - El contexto que se envía al LLM se recorta por caracteres, no por tokens.
 - `/health` no comprueba las dependencias.

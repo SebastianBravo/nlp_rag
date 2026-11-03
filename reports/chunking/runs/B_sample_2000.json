@@ -1,0 +1,177 @@
+{
+  "strategy": "B",
+  "strategy_version": 1,
+  "params": {
+    "name": "estructura",
+    "version": 1,
+    "chunk_tokens": 256,
+    "overlap_sentences": 1,
+    "paragraph_min_fill": 0.5
+  },
+  "sample": "sample_2000",
+  "sample_path": "data/samples/sample_2000_ids.txt",
+  "sample_documents": 2000,
+  "excluded_template_documents": 13,
+  "created_at_utc": "2026-11-03T00:46:11+00:00",
+  "parquet": {
+    "path": "data/documentos_rag.parquet",
+    "sha256": "f4a669f17eaedd357f72b70c2192e685b6d534a94f6ffaeadbced7290b181728"
+  },
+  "config": {
+    "batch_size": 2000,
+    "documents": {
+      "exclude_template_groups": {
+        "collection": "url_crawls",
+        "min_copies": 100
+      }
+    },
+    "boilerplate": {
+      "exclude": true,
+      "lines": "data/eda/boilerplate_lines.parquet"
+    },
+    "features": "data/eda/document_features.parquet",
+    "min_fragment_tokens": 8,
+    "sentences": {
+      "languages": {
+        "cs": "czech",
+        "da": "danish",
+        "de": "german",
+        "el": "greek",
+        "en": "english",
+        "es": "spanish",
+        "et": "estonian",
+        "fi": "finnish",
+        "fr": "french",
+        "it": "italian",
+        "ml": "malayalam",
+        "nl": "dutch",
+        "no": "norwegian",
+        "pl": "polish",
+        "pt": "portuguese",
+        "ru": "russian",
+        "sl": "slovene",
+        "sv": "swedish",
+        "tr": "turkish"
+      },
+      "default": "english"
+    },
+    "strategies": {
+      "A": {
+        "name": "ventana de tokens",
+        "version": 1,
+        "chunk_tokens": 256,
+        "overlap_tokens": 32
+      },
+      "B": {
+        "name": "estructura",
+        "version": 1,
+        "chunk_tokens": 256,
+        "overlap_sentences": 1,
+        "paragraph_min_fill": 0.5
+      }
+    },
+    "example_text": "configs/ejemplo_segmentacion.txt"
+  },
+  "encoder": {
+    "model": "intfloat/multilingual-e5-small",
+    "query_prefix": "query: ",
+    "passage_prefix": "passage: ",
+    "normalize": true,
+    "max_tokens": 512
+  },
+  "versions": {
+    "python": "3.12.16",
+    "pandas": "2.3.3",
+    "pyarrow": "23.0.1",
+    "nltk": "3.10.4",
+    "transformers": "5.22.1",
+    "sentence-transformers": "5.7.0",
+    "tokenizers": "0.23.3"
+  },
+  "seconds": {
+    "chunking": 3.04,
+    "encoder_tokens": 0.41,
+    "dedup": 0.04,
+    "total": 4.01
+  },
+  "chunks_per_second": 2496.4,
+  "output": "data/chunks/B/sample_2000.parquet",
+  "chunks_written": 7517,
+  "stats": [
+    {
+      "collection_name": "bluesky_posts",
+      "documents": 764,
+      "documents_without_chunks": 0,
+      "chunks": 764,
+      "dropped_fragments": 0,
+      "chunks_per_doc_mean": 1.0,
+      "chunks_per_doc_p50": 1.0,
+      "chunks_per_doc_p95": 1.0,
+      "chunks_per_doc_max": 1,
+      "single_chunk_docs_share": 1.0,
+      "n_tokens_p5": 22.0,
+      "n_tokens_p50": 60.0,
+      "n_tokens_p95": 86.0,
+      "n_tokens_max": 144,
+      "share_over_max_tokens": 0.0,
+      "mid_sentence_share": 0.0,
+      "boilerplate_excluded_share": 0.0,
+      "coverage_share": 1.0,
+      "overlap_ratio": 0.0,
+      "chunks_before_dedup": 764,
+      "removed": 41,
+      "kept": 723,
+      "removed_share": 0.05366492146596859
+    },
+    {
+      "collection_name": "url_crawls",
+      "documents": 1223,
+      "documents_without_chunks": 0,
+      "chunks": 6817,
+      "dropped_fragments": 345,
+      "chunks_per_doc_mean": 5.573998364677024,
+      "chunks_per_doc_p50": 5.0,
+      "chunks_per_doc_p95": 13.0,
+      "chunks_per_doc_max": 186,
+      "single_chunk_docs_share": 0.06623058053965658,
+      "n_tokens_p5": 107.0,
+      "n_tokens_p50": 223.0,
+      "n_tokens_p95": 257.0,
+      "n_tokens_max": 261,
+      "share_over_max_tokens": 0.0,
+      "mid_sentence_share": 0.00029338418659234265,
+      "boilerplate_excluded_share": 0.08300220959148544,
+      "coverage_share": 0.9158276361150878,
+      "overlap_ratio": 0.1610478947924543,
+      "chunks_before_dedup": 6817,
+      "removed": 23,
+      "kept": 6794,
+      "removed_share": 0.0033739181458119407
+    },
+    {
+      "collection_name": "total",
+      "documents": 1987,
+      "documents_without_chunks": 0,
+      "chunks": 7581,
+      "dropped_fragments": 345,
+      "chunks_per_doc_mean": 3.8152994464016103,
+      "chunks_per_doc_p50": 3.0,
+      "chunks_per_doc_p95": 11.0,
+      "chunks_per_doc_max": 186,
+      "single_chunk_docs_share": 0.4252642174131857,
+      "n_tokens_p5": 53.0,
+      "n_tokens_p50": 218.0,
+      "n_tokens_p95": 257.0,
+      "n_tokens_max": 261,
+      "share_over_max_tokens": 0.0,
+      "mid_sentence_share": 0.00026381743833267377,
+      "boilerplate_excluded_share": 0.08076807548958707,
+      "coverage_share": 0.918093266747311,
+      "overlap_ratio": 0.15632630956156612,
+      "chunks_before_dedup": 7581,
+      "removed": 64,
+      "kept": 7517,
+      "removed_share": 0.00844215802664556
+    }
+  ]
+}

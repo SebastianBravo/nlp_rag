@@ -46,6 +46,16 @@ def count_tokens(texts, kind='passage'):
     encoded = encoder().tokenizer(prefixed, add_special_tokens=True, truncation=False, verbose=False)
     return [len(ids) for ids in encoded['input_ids']]
 
+def token_offsets(texts):
+    """Por texto, los (inicio, fin) en caracteres de cada token de contenido, sin prefijo ni tokens especiales.
+
+    Sirve para cortar chunks en fronteras de token sobre el texto original; su tamaño final se mide
+    con `count_tokens`, que sí incluye prefijo y tokens especiales.
+    """
+    encoded = encoder().tokenizer(list(texts), add_special_tokens=False, truncation=False, verbose=False,
+                                  return_offsets_mapping=True)
+    return [[(start, end) for start, end in offsets if end > start] for offsets in encoded['offset_mapping']]
+
 def max_tokens():
     """Tope de tokens del encoder; lo que lo supera se trunca al codificar."""
     return encoder().max_seq_length

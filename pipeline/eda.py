@@ -59,13 +59,14 @@ def run(parquet, cfg, out_dir, samples_dir, work_dir, *, count_tokens, max_token
         crawl = batch[batch['document_id'].isin(crawl_ids)]
         if len(crawl): line_parts.append(prof.line_hashes(crawl, noise_cfg['boilerplate_min_chars']))
     features = pd.concat(feature_parts, ignore_index=True)
-    per_doc_bp, per_domain_bp = prof.boilerplate(pd.concat(line_parts, ignore_index=True) if line_parts else
-                                                 pd.DataFrame(columns=['document_id', 'line_hash']), meta,
-                                                 noise_cfg['boilerplate_min_docs'])
+    lines = pd.concat(line_parts, ignore_index=True) if line_parts else pd.DataFrame(columns=['document_id', 'line_hash'])
+    per_doc_bp, per_domain_bp = prof.boilerplate(lines, meta, noise_cfg['boilerplate_min_docs'])
     features = (features.merge(meta[['document_id', *FEATURE_COLUMNS]], on='document_id', validate='one_to_one')
                 .merge(per_doc_bp, on='document_id', how='left'))
     work_dir.mkdir(parents=True, exist_ok=True)
     features.to_parquet(work_dir / 'document_features.parquet', index=False)
+    # Conjunto de líneas boilerplate por dominio: la segmentación (Fase B) las salta como intervalos.
+    prof.boilerplate_lines(lines, meta, noise_cfg['boilerplate_min_docs']).to_parquet(work_dir / 'boilerplate_lines.parquet', index=False)
 
     log('A1 integridad')
     completeness = pd.concat([prof.completeness(meta), *text_completeness]).groupby('column', sort=False).sum().reset_index()
@@ -194,7 +195,8 @@ def run(parquet, cfg, out_dir, samples_dir, work_dir, *, count_tokens, max_token
                  'domains': int(concentration['domains'])},
         'samples': sample_info,
         'outputs': {'tables': table_files, 'figures': figures,
-                    'work': [str(work_dir / 'document_features.parquet'), str(work_dir / f'near_duplicate_pairs_{near_cfg["sample"]}.parquet')]},
+                    'work': [str(work_dir / 'document_features.parquet'), str(work_dir / 'boilerplate_lines.parquet'),
+                             str(work_dir / f'near_duplicate_pairs_{near_cfg["sample"]}.parquet')]},
     }
     profile = report.to_jsonable(profile)
     report.write_json(profile, out_dir / 'profile.json')

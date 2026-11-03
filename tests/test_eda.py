@@ -65,6 +65,8 @@ def test_outputs_exist(result):
         assert (root / 'reports' / 'figures' / name).stat().st_size > 0
     assert (root / 'reports' / 'profile.json').is_file()
     assert (root / 'work' / 'document_features.parquet').is_file()
+    lines = pd.read_parquet(root / 'work' / 'boilerplate_lines.parquet')
+    assert set(lines['url_domain']) == {f'medio{i}.com' for i in range(4)} and (lines['documents'] >= 5).all()
 
 def test_samples_are_nested_and_written(result):
     root, _, _ = result

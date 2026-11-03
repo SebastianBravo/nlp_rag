@@ -1,0 +1,177 @@
+{
+  "strategy": "B",
+  "strategy_version": 1,
+  "params": {
+    "name": "estructura",
+    "version": 1,
+    "chunk_tokens": 256,
+    "overlap_sentences": 1,
+    "paragraph_min_fill": 0.5
+  },
+  "sample": "sample_10000",
+  "sample_path": "data/samples/sample_10000_ids.txt",
+  "sample_documents": 10000,
+  "excluded_template_documents": 63,
+  "created_at_utc": "2026-11-03T00:47:22+00:00",
+  "parquet": {
+    "path": "data/documentos_rag.parquet",
+    "sha256": "f4a669f17eaedd357f72b70c2192e685b6d534a94f6ffaeadbced7290b181728"
+  },
+  "config": {
+    "batch_size": 2000,
+    "documents": {
+      "exclude_template_groups": {
+        "collection": "url_crawls",
+        "min_copies": 100
+      }
+    },
+    "boilerplate": {
+      "exclude": true,
+      "lines": "data/eda/boilerplate_lines.parquet"
+    },
+    "features": "data/eda/document_features.parquet",
+    "min_fragment_tokens": 8,
+    "sentences": {
+      "languages": {
+        "cs": "czech",
+        "da": "danish",
+        "de": "german",
+        "el": "greek",
+        "en": "english",
+        "es": "spanish",
+        "et": "estonian",
+        "fi": "finnish",
+        "fr": "french",
+        "it": "italian",
+        "ml": "malayalam",
+        "nl": "dutch",
+        "no": "norwegian",
+        "pl": "polish",
+        "pt": "portuguese",
+        "ru": "russian",
+        "sl": "slovene",
+        "sv": "swedish",
+        "tr": "turkish"
+      },
+      "default": "english"
+    },
+    "strategies": {
+      "A": {
+        "name": "ventana de tokens",
+        "version": 1,
+        "chunk_tokens": 256,
+        "overlap_tokens": 32
+      },
+      "B": {
+        "name": "estructura",
+        "version": 1,
+        "chunk_tokens": 256,
+        "overlap_sentences": 1,
+        "paragraph_min_fill": 0.5
+      }
+    },
+    "example_text": "configs/ejemplo_segmentacion.txt"
+  },
+  "encoder": {
+    "model": "intfloat/multilingual-e5-small",
+    "query_prefix": "query: ",
+    "passage_prefix": "passage: ",
+    "normalize": true,
+    "max_tokens": 512
+  },
+  "versions": {
+    "python": "3.12.16",
+    "pandas": "2.3.3",
+    "pyarrow": "23.0.1",
+    "nltk": "3.10.4",
+    "transformers": "5.22.1",
+    "sentence-transformers": "5.7.0",
+    "tokenizers": "0.23.3"
+  },
+  "seconds": {
+    "chunking": 9.38,
+    "encoder_tokens": 2.41,
+    "dedup": 0.23,
+    "total": 12.78
+  },
+  "chunks_per_second": 4123.4,
+  "output": "data/chunks/B/sample_10000.parquet",
+  "chunks_written": 37919,
+  "stats": [
+    {
+      "collection_name": "bluesky_posts",
+      "documents": 3821,
+      "documents_without_chunks": 0,
+      "chunks": 3821,
+      "dropped_fragments": 0,
+      "chunks_per_doc_mean": 1.0,
+      "chunks_per_doc_p50": 1.0,
+      "chunks_per_doc_p95": 1.0,
+      "chunks_per_doc_max": 1,
+      "single_chunk_docs_share": 1.0,
+      "n_tokens_p5": 22.0,
+      "n_tokens_p50": 61.0,
+      "n_tokens_p95": 86.0,
+      "n_tokens_max": 144,
+      "share_over_max_tokens": 0.0,
+      "mid_sentence_share": 0.0,
+      "boilerplate_excluded_share": 0.0,
+      "coverage_share": 0.9999987516649669,
+      "overlap_ratio": 0.0,
+      "chunks_before_dedup": 3821,
+      "removed": 305,
+      "kept": 3516,
+      "removed_share": 0.07982203611619995
+    },
+    {
+      "collection_name": "url_crawls",
+      "documents": 6116,
+      "documents_without_chunks": 3,
+      "chunks": 34871,
+      "dropped_fragments": 1617,
+      "chunks_per_doc_mean": 5.701602354480053,
+      "chunks_per_doc_p50": 5.0,
+      "chunks_per_doc_p95": 13.0,
+      "chunks_per_doc_max": 399,
+      "single_chunk_docs_share": 0.06000654022236756,
+      "n_tokens_p5": 107.0,
+      "n_tokens_p50": 222.0,
+      "n_tokens_p95": 257.0,
+      "n_tokens_max": 261,
+      "share_over_max_tokens": 0.0,
+      "mid_sentence_share": 0.0013765019643830116,
+      "boilerplate_excluded_share": 0.07809021972712935,
+      "coverage_share": 0.9207914465852195,
+      "overlap_ratio": 0.1649509178894466,
+      "chunks_before_dedup": 34871,
+      "removed": 468,
+      "kept": 34403,
+      "removed_share": 0.013420894152734364
+    },
+    {
+      "collection_name": "total",
+      "documents": 9937,
+      "documents_without_chunks": 3,
+      "chunks": 38692,
+      "dropped_fragments": 1617,
+      "chunks_per_doc_mean": 3.893730502163631,
+      "chunks_per_doc_p50": 3.0,
+      "chunks_per_doc_p95": 11.0,
+      "chunks_per_doc_max": 399,
+      "single_chunk_docs_share": 0.4214551675556003,
+      "n_tokens_p5": 55.0,
+      "n_tokens_p50": 217.0,
+      "n_tokens_p95": 257.0,
+      "n_tokens_max": 261,
+      "share_over_max_tokens": 0.0,
+      "mid_sentence_share": 0.0012405665253799234,
+      "boilerplate_excluded_share": 0.07598342531295608,
+      "coverage_share": 0.9229283788218918,
+      "overlap_ratio": 0.16012908996602437,
+      "chunks_before_dedup": 38692,
+      "removed": 773,
+      "kept": 37919,
+      "removed_share": 0.01997829008580585
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+# Parámetros de segmentación (Fase B). Se copian a reports/chunking/runs/<estrategia>_<muestra>.json en cada ejecución.
+# Si cambia una estrategia, sube su `version`: cambia el chunk_id y la colección Milvus correspondiente.
+batch_size: 2000                # documentos por lote al leer el texto
+
+documents:
+  # Grupos de prensa con el mismo texto repetido al menos min_copies veces son páginas plantilla
+  # (portadas, perfiles), no artículos; se excluyen antes de segmentar.
+  exclude_template_groups: {collection: url_crawls, min_copies: 100}
+
+boilerplate:
+  exclude: true                 # salta como intervalos las líneas marcadas en la Fase A
+  lines: data/eda/boilerplate_lines.parquet
+
+features: data/eda/document_features.parquet   # idioma detectado y mojibake por documento (Fase A)
+min_fragment_tokens: 8          # en documentos con varios chunks se descartan los fragmentos más cortos
+
+sentences:
+  # Modelos de nltk punkt por código de idioma (language_base o, si falta, el detectado).
+  languages: {cs: czech, da: danish, de: german, el: greek, en: english, es: spanish, et: estonian, fi: finnish,
+              fr: french, it: italian, ml: malayalam, nl: dutch, 'no': norwegian, pl: polish, pt: portuguese,
+              ru: russian, sl: slovene, sv: swedish, tr: turkish}
+  default: english              # idiomas sin modelo, incluido el húngaro
+
+strategies:
+  A:
+    name: ventana de tokens
+    version: 1
+    chunk_tokens: 256           # tokens de contenido; el prefijo y los especiales se suman al medir
+    overlap_tokens: 32
+  B:
+    name: estructura
+    version: 1
+    chunk_tokens: 256
+    overlap_sentences: 1
+    paragraph_min_fill: 0.5     # corta en un cambio de párrafo si el chunk conserva al menos la mitad del presupuesto
+
+example_text: configs/ejemplo_segmentacion.txt   # texto sintético para ilustrar las fronteras (no es del corpus)
