@@ -1,0 +1,7 @@
+field,value,observed,expected,diff
+total,total,169248,169248,0
+collection_name,bluesky_posts,64670,64670,0
+collection_name,url_crawls,104578,104578,0
+source,bluesky,64670,64670,0
+source,gdelt,1198,1198,0
+source,media_cloud,103380,103380,0

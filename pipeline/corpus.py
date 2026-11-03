@@ -1,16 +1,11 @@
 """Descarga del corpus con open_corpus_co_es y copia verificada a data/."""
-import hashlib, os, shutil
+import json, os, re, shutil
 from pathlib import Path
+import gdown
 import pyarrow.parquet as pq
 from open_corpus_co_es import download_corpus, list_corpus
 from open_corpus_co_es.downloader import get_corpus_path
-
-def sha256_file(path, block_size=1024 * 1024):
-    digest = hashlib.sha256()
-    with open(path, 'rb') as source:
-        for block in iter(lambda: source.read(block_size), b''):
-            digest.update(block)
-    return digest.hexdigest()
+from pipeline.io import sha256_file
 
 def catalog_entry(name):
     catalog = list_corpus()
@@ -48,3 +43,26 @@ def fetch_corpus(name, output, force=False):
     if meta['extension'] == 'parquet':
         summary.update(rows=pq.ParquetFile(output).metadata.num_rows, rows_catalog=meta.get('filas'))
     return summary
+
+def fetch_manifest(name, output, force=False):
+    """Descarga el manifiesto de procedencia que el catálogo publica junto al corpus (JSON en Drive).
+
+    El manifiesto trae el sha256 del archivo, los conteos de valores no vacíos por columna y las
+    distribuciones que verifica el perfilado. Sin `force`, un manifiesto existente no se toca.
+    """
+    output = Path(output)
+    url = catalog_entry(name).get('manifiesto_url')
+    if not url: return {'status': 'unavailable', 'output': None}
+    if output.exists() and not force: return {'status': 'skipped', 'output': str(output)}
+    match = re.search(r'/d/([\w-]+)', url)
+    if not match: raise ValueError(f'No se reconoce el id de Drive del manifiesto: {url}')
+    output.parent.mkdir(parents=True, exist_ok=True)
+    tmp = output.with_name(output.name + '.tmp')
+    try:
+        if gdown.download(id=match.group(1), output=str(tmp), quiet=True, use_cookies=False) is None:
+            raise IOError('Google Drive no devolvió el manifiesto.')
+        with open(tmp, encoding='utf-8') as source: json.load(source)
+        os.replace(tmp, output)
+    finally:
+        if tmp.exists(): tmp.unlink()
+    return {'status': 'downloaded', 'output': str(output)}

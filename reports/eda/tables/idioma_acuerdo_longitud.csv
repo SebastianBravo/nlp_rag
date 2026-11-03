@@ -1,0 +1,12 @@
+collection_name,length_bin,n,agreement
+bluesky_posts,0–50,713,0.754558
+bluesky_posts,50–100,4832,0.924255
+bluesky_posts,100–200,13873,0.943632
+bluesky_posts,200–500,32113,0.952293
+url_crawls,0–50,13,0.538462
+url_crawls,50–100,56,0.928571
+url_crawls,100–200,75,0.933333
+url_crawls,200–500,807,0.981413
+url_crawls,500–1000,2133,0.982654
+url_crawls,1000–5000,70777,0.975712
+url_crawls,≥5000,30702,0.981467

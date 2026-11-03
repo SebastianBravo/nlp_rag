@@ -1,0 +1,4 @@
+column,rows,mismatches,match_rate
+char_count,169248,0,1
+word_count,169248,0,1
+text_sha256,169248,0,1

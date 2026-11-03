@@ -1,0 +1,10 @@
+collection_name,metric,n,mean,min,p5,p50,p95,p99,max
+bluesky_posts,char_count_calc,64670,211.303,40,70,232,298,300,422
+bluesky_posts,word_count_calc,64670,32.7296,1,10,35,52,56,67
+bluesky_posts,n_tokens,64670,58.9489,10,23,62,86,136,323
+url_crawls,char_count_calc,104578,4686.68,41,1331,3882,10112,17977.1,363528
+url_crawls,word_count_calc,104578,745.745,2,204,622,1615.15,2866.23,58181
+url_crawls,n_tokens,104578,1081.98,14,309,896,2335,4211,88532
+total,char_count_calc,169248,2976.63,40,103,2367,8304.3,15142,363528
+total,word_count_calc,169248,473.301,1,15,371,1323,2420,58181
+total,n_tokens,169248,691.077,10,32,543,1921,3512,88532

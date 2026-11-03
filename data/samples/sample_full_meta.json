@@ -1,0 +1,87 @@
+{
+  "name": "sample_full",
+  "size": 169248,
+  "ids": "todas las filas del Parquet",
+  "created_at_utc": "2026-11-02T23:59:03+00:00",
+  "parquet": "documentos_rag.parquet",
+  "parquet_sha256": "f4a669f17eaedd357f72b70c2192e685b6d534a94f6ffaeadbced7290b181728",
+  "strata": [
+    "collection_name",
+    "language_base"
+  ],
+  "min_share": 0.01,
+  "distribution": [
+    {
+      "stratum": "url_crawls|es",
+      "corpus_documents": 63420,
+      "sample_documents": 63420,
+      "corpus_share": 0.37471639251276234,
+      "sample_share": 0.37471639251276234,
+      "diff": 0.0
+    },
+    {
+      "stratum": "bluesky_posts|en",
+      "corpus_documents": 45773,
+      "sample_documents": 45773,
+      "corpus_share": 0.270449281527699,
+      "sample_share": 0.270449281527699,
+      "diff": 0.0
+    },
+    {
+      "stratum": "url_crawls|en",
+      "corpus_documents": 36909,
+      "sample_documents": 36909,
+      "corpus_share": 0.21807643221781056,
+      "sample_share": 0.21807643221781056,
+      "diff": 0.0
+    },
+    {
+      "stratum": "bluesky_posts|desconocido",
+      "corpus_documents": 13137,
+      "sample_documents": 13137,
+      "corpus_share": 0.07761982416335791,
+      "sample_share": 0.07761982416335791,
+      "diff": 0.0
+    },
+    {
+      "stratum": "url_crawls|hu",
+      "corpus_documents": 4062,
+      "sample_documents": 4062,
+      "corpus_share": 0.02400028360748724,
+      "sample_share": 0.02400028360748724,
+      "diff": 0.0
+    },
+    {
+      "stratum": "bluesky_posts|es",
+      "corpus_documents": 3488,
+      "sample_documents": 3488,
+      "corpus_share": 0.020608810739270185,
+      "sample_share": 0.020608810739270185,
+      "diff": 0.0
+    },
+    {
+      "stratum": "bluesky_posts|otro",
+      "corpus_documents": 2201,
+      "sample_documents": 2201,
+      "corpus_share": 0.013004584987710342,
+      "sample_share": 0.013004584987710342,
+      "diff": 0.0
+    },
+    {
+      "stratum": "url_crawls|otro",
+      "corpus_documents": 187,
+      "sample_documents": 187,
+      "corpus_share": 0.0011048875023633958,
+      "sample_share": 0.0011048875023633958,
+      "diff": 0.0
+    },
+    {
+      "stratum": "bluesky_posts|hu",
+      "corpus_documents": 71,
+      "sample_documents": 71,
+      "corpus_share": 0.0004195027415390433,
+      "sample_share": 0.0004195027415390433,
+      "diff": 0.0
+    }
+  ]
+}

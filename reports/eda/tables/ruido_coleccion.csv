@@ -1,0 +1,25 @@
+collection_name,flag,label,documents,share
+bluesky_posts,is_blank,vacío o solo espacios,0,0
+bluesky_posts,is_short,muy corto (< 5 palabras),651,0.0100665
+bluesky_posts,only_urls,solo URL,116,0.00179372
+bluesky_posts,no_alnum,solo emojis o símbolos,0,0
+bluesky_posts,has_html_tag,etiquetas HTML,8,0.000123705
+bluesky_posts,has_html_entity,entidades HTML,19,0.000293799
+bluesky_posts,has_mojibake,mojibake,0,0
+bluesky_posts,has_replacement_char,carácter de reemplazo (U+FFFD),2,3.09262e-05
+url_crawls,is_blank,vacío o solo espacios,0,0
+url_crawls,is_short,muy corto (< 5 palabras),2,1.91245e-05
+url_crawls,only_urls,solo URL,0,0
+url_crawls,no_alnum,solo emojis o símbolos,0,0
+url_crawls,has_html_tag,etiquetas HTML,111,0.00106141
+url_crawls,has_html_entity,entidades HTML,0,0
+url_crawls,has_mojibake,mojibake,1049,0.0100308
+url_crawls,has_replacement_char,carácter de reemplazo (U+FFFD),15,0.000143434
+total,is_blank,vacío o solo espacios,0,0
+total,is_short,muy corto (< 5 palabras),653,0.00385824
+total,only_urls,solo URL,116,0.000685385
+total,no_alnum,solo emojis o símbolos,0,0
+total,has_html_tag,etiquetas HTML,119,0.00070311
+total,has_html_entity,entidades HTML,19,0.000112261
+total,has_mojibake,mojibake,1049,0.00619801
+total,has_replacement_char,carácter de reemplazo (U+FFFD),17,0.000100444

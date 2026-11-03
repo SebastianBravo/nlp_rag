@@ -1,0 +1,7 @@
+column,non_null,distinct,duplicate_rows
+strategy,104578,5,104573
+source_type,69922,2,69920
+country_key,69922,3,69919
+keyword_family,168040,21,168019
+collection_keyword_label,64660,18,64642
+collection_query,64670,288,64382

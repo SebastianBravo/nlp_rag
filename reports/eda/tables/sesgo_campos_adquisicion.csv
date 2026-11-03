@@ -1,0 +1,62 @@
+field,collection_name,value,documents,share
+strategy,bluesky_posts,(nulo),64670,1
+strategy,url_crawls,event_query,1188,0.0113599
+strategy,url_crawls,event_query_sample,5,4.78112e-05
+strategy,url_crawls,local_excel,5252,0.0502209
+strategy,url_crawls,raw_text_poc_20260911,10,9.56224e-05
+strategy,url_crawls,whitelist,98123,0.938276
+source_type,bluesky_posts,social_post,64670,1
+source_type,url_crawls,(nulo),99326,0.949779
+source_type,url_crawls,news_article,5252,0.0502209
+country_key,bluesky_posts,colombia,15621,0.241549
+country_key,bluesky_posts,hungary,10350,0.160043
+country_key,bluesky_posts,united_kingdom,38699,0.598407
+country_key,url_crawls,(nulo),99326,0.949779
+country_key,url_crawls,colombia,4884,0.046702
+country_key,url_crawls,united_kingdom,368,0.0035189
+keyword_family,bluesky_posts,(nulo),10,0.000154631
+keyword_family,bluesky_posts,A,1999,0.0309108
+keyword_family,bluesky_posts,B1,3155,0.0487861
+keyword_family,bluesky_posts,B2,2294,0.0354724
+keyword_family,bluesky_posts,C,1975,0.0305397
+keyword_family,bluesky_posts,D,2346,0.0362765
+keyword_family,bluesky_posts,E,7585,0.117288
+keyword_family,bluesky_posts,F,3036,0.046946
+keyword_family,bluesky_posts,G,1677,0.0259317
+keyword_family,bluesky_posts,H,770,0.0119066
+keyword_family,bluesky_posts,I,708,0.0109479
+keyword_family,bluesky_posts,J,10403,0.160863
+keyword_family,bluesky_posts,K,5525,0.0854337
+keyword_family,bluesky_posts,L,5794,0.0895933
+keyword_family,bluesky_posts,M,1650,0.0255141
+keyword_family,bluesky_posts,N,2259,0.0349312
+keyword_family,bluesky_posts,O,5438,0.0840884
+keyword_family,bluesky_posts,P,1251,0.0193444
+keyword_family,bluesky_posts,Q,5652,0.0873976
+keyword_family,bluesky_posts,R,1143,0.0176743
+keyword_family,url_crawls,(nulo),1198,0.0114556
+keyword_family,url_crawls,A,98099,0.938046
+keyword_family,url_crawls,L,15,0.000143434
+keyword_family,url_crawls,Q,14,0.000133871
+keyword_family,url_crawls,bbc,368,0.0035189
+keyword_family,url_crawls,el_espectador,4884,0.046702
+collection_keyword_label,bluesky_posts,(nulo),10,0.000154631
+collection_keyword_label,bluesky_posts,Biodiversity status and loss,1999,0.0309108
+collection_keyword_label,bluesky_posts,Calls to action and mobilisation,5438,0.0840884
+collection_keyword_label,bluesky_posts,"Connection, species and proximity",708,0.0109479
+collection_keyword_label,bluesky_posts,Conservation and restoration,1975,0.0305397
+collection_keyword_label,bluesky_posts,"Contestation, backlash and disinformation",5652,0.0873976
+collection_keyword_label,bluesky_posts,"Costs, risks and constraints",2259,0.0349312
+collection_keyword_label,bluesky_posts,Drivers and pressures,5449,0.0842585
+collection_keyword_label,bluesky_posts,"Efficacy, fatalism and disengagement",1650,0.0255141
+collection_keyword_label,bluesky_posts,Emotional resonance — negative,10403,0.160863
+collection_keyword_label,bluesky_posts,Everyday practice and stewardship,1251,0.0193444
+collection_keyword_label,bluesky_posts,"Hope, pride and positive affect",5525,0.0854337
+collection_keyword_label,bluesky_posts,"Identity, voice and lived experience",1143,0.0176743
+collection_keyword_label,bluesky_posts,"Justice, rights and intersectionality",3036,0.046946
+collection_keyword_label,bluesky_posts,Perceived loss in everyday life,770,0.0119066
+collection_keyword_label,bluesky_posts,"Policy, governance and instruments",2346,0.0362765
+collection_keyword_label,bluesky_posts,Responsibility and blame,5794,0.0895933
+collection_keyword_label,bluesky_posts,"Structural context, power and information",7585,0.117288
+collection_keyword_label,bluesky_posts,Topic anchors and hashtags,1677,0.0259317
+collection_keyword_label,url_crawls,(nulo),104578,1

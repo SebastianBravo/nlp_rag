@@ -1,0 +1,34 @@
+position,column,arrow_type,expected_position,status
+0,document_id,string,0,ok
+1,text,string,1,ok
+2,collection_name,string,2,ok
+3,title,string,3,ok
+4,url,string,4,ok
+5,source,string,5,ok
+6,source_type,string,6,ok
+7,language,string,7,ok
+8,country_key,string,8,ok
+9,created_at,string,9,ok
+10,synced_at,string,10,ok
+11,mongo_id,string,11,ok
+12,strategy,string,12,ok
+13,url_domain,string,13,ok
+14,final_url,string,14,ok
+15,language_base,string,15,ok
+16,publisher,string,16,ok
+17,author_id,string,17,ok
+18,author_name,string,18,ok
+19,author_handle,string,19,ok
+20,uri,string,20,ok
+21,section,string,21,ok
+22,event_id,string,22,ok
+23,event_context,string,23,ok
+24,keyword_family,string,24,ok
+25,collection_keyword,string,25,ok
+26,collection_keyword_label,string,26,ok
+27,collection_query,string,27,ok
+28,keyword_matches,list<element: string>,28,ok
+29,top_terms,"list<element: struct<term: string, count: int64>>",29,ok
+30,word_count,int64,30,ok
+31,char_count,int64,31,ok
+32,text_sha256,string,32,ok

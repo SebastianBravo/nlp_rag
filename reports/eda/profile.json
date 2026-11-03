@@ -1,0 +1,262 @@
+{
+  "run": {
+    "created_at_utc": "2026-11-02T23:59:03+00:00",
+    "duration_seconds": 164.5,
+    "parquet": {
+      "path": "data/documentos_rag.parquet",
+      "sha256": "f4a669f17eaedd357f72b70c2192e685b6d534a94f6ffaeadbced7290b181728",
+      "bytes": 256941261,
+      "rows": 169248,
+      "row_groups": 83,
+      "created_by": "parquet-cpp-arrow version 26.0.0",
+      "key_value": {
+        "document_key": "document_id",
+        "granularity": "document",
+        "text_policy": "original text preserved exactly; no chunking or embeddings"
+      }
+    },
+    "manifest_available": true,
+    "config": {
+      "seed": 42,
+      "batch_size": 4000,
+      "samples": {
+        "sizes": [
+          2000,
+          10000
+        ],
+        "strata": [
+          "collection_name",
+          "language_base"
+        ],
+        "min_share": 0.01
+      },
+      "tokens": {
+        "thresholds": [
+          256,
+          512
+        ]
+      },
+      "language": {
+        "max_chars": 1000,
+        "min_share": 0.01,
+        "length_bins": [
+          0,
+          50,
+          100,
+          200,
+          500,
+          1000,
+          5000,
+          1000000
+        ]
+      },
+      "dates": {
+        "plausible_start": {
+          "bluesky_posts": "2023-01-01"
+        }
+      },
+      "near_duplicates": {
+        "sample": 10000,
+        "shingle_words": 5,
+        "num_perm": 128,
+        "threshold": 0.8,
+        "examples_per_type": 5
+      },
+      "noise": {
+        "short_words": 5,
+        "boilerplate_collections": [
+          "url_crawls"
+        ],
+        "boilerplate_min_chars": 20,
+        "boilerplate_min_docs": 20
+      },
+      "urls": {
+        "tracking_params": [
+          "utm_*",
+          "fbclid",
+          "gclid",
+          "dclid",
+          "msclkid",
+          "mc_cid",
+          "mc_eid",
+          "igshid",
+          "_ga",
+          "_gl",
+          "ref_src"
+        ],
+        "top_domains": 20
+      },
+      "acquisition_fields": [
+        "strategy",
+        "source_type",
+        "country_key",
+        "keyword_family",
+        "collection_keyword_label"
+      ]
+    },
+    "versions": {
+      "python": "3.12.16",
+      "pandas": "2.3.3",
+      "pyarrow": "23.0.1",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "matplotlib": "3.11.2",
+      "lingua-language-detector": "2.2.0",
+      "datasketch": "2.0.0",
+      "transformers": "5.22.1",
+      "sentence-transformers": "5.7.0",
+      "open_corpus_co_es": "0.1.1a4"
+    },
+    "encoder": {
+      "model": "intfloat/multilingual-e5-small",
+      "query_prefix": "query: ",
+      "passage_prefix": "passage: ",
+      "normalize": true,
+      "max_tokens": 512
+    },
+    "language_detector": "lingua (todos los idiomas, alta precisión)"
+  },
+  "integrity": {
+    "sha256_matches_manifest": true,
+    "sha256_matches_catalog": true,
+    "columns": 33,
+    "schema_ok": true,
+    "schema_issues": [],
+    "document_id_unique": true,
+    "recount_mismatches": {
+      "char_count": 0,
+      "word_count": 0,
+      "text_sha256": 0
+    },
+    "counts_match_published": true,
+    "nonempty_diff_vs_manifest": {}
+  },
+  "distributions": {
+    "documents": 169248,
+    "by_collection": {
+      "url_crawls": 104578,
+      "bluesky_posts": 64670
+    },
+    "tokens_share_above": {
+      "bluesky_posts": {
+        "share_gt_256": 1.5463120457708367e-05,
+        "share_gt_512": 0.0
+      },
+      "url_crawls": {
+        "share_gt_256": 0.9655089980684274,
+        "share_gt_512": 0.8319723077511523
+      },
+      "total": {
+        "share_gt_256": 0.5965919833616941,
+        "share_gt_512": 0.514074021554169
+      }
+    },
+    "language_agreement": {
+      "bluesky_posts": 0.9445964565019115,
+      "url_crawls": 0.9774776928741524,
+      "total": 0.966622676079798
+    }
+  },
+  "duplicates": {
+    "unique_texts": 154477,
+    "exact_extra_rows": 14771,
+    "cross_collection_groups": 0,
+    "near_duplicate_sample": 10000,
+    "near_duplicate_pairs": 4398,
+    "share_docs_with_near_duplicate": 0.0137
+  },
+  "urls": {
+    "n": 169248,
+    "null": 0,
+    "valid": 169248,
+    "https": 163095,
+    "with_query": 5636,
+    "with_tracking": 2050,
+    "duplicated": 227,
+    "final_url_differs": 16570
+  },
+  "noise": {
+    "is_blank": 0.0,
+    "is_short": 0.003858243524295708,
+    "only_urls": 0.0006853847608243524,
+    "no_alnum": 0.0,
+    "has_html_tag": 0.0007031102287767064,
+    "has_html_entity": 0.00011226129703157497,
+    "has_mojibake": 0.006198005294006428,
+    "has_replacement_char": 0.00010044431839667234
+  },
+  "bias": {
+    "top5_domain_share": 0.4730057947178183,
+    "top20_domain_share": 0.695088833215399,
+    "domains": 978
+  },
+  "samples": {
+    "2000": {
+      "size": 2000,
+      "meta": "data/samples/sample_2000_meta.json",
+      "ids": "data/samples/sample_2000_ids.txt",
+      "max_abs_share_diff": 0.00028360748723765816
+    },
+    "10000": {
+      "size": 10000,
+      "meta": "data/samples/sample_10000_meta.json",
+      "ids": "data/samples/sample_10000_ids.txt",
+      "max_abs_share_diff": 5.0718472301036766e-05
+    },
+    "full": {
+      "size": 169248,
+      "meta": "data/samples/sample_full_meta.json"
+    }
+  },
+  "outputs": {
+    "tables": [
+      "boilerplate_dominio.csv",
+      "casi_duplicados_ejemplos.csv",
+      "casi_duplicados_resumen.csv",
+      "casi_duplicados_tipos.csv",
+      "distribucion_coleccion_fuente.csv",
+      "distribucion_longitudes.csv",
+      "distribucion_tokens_umbral.csv",
+      "dominios_top.csv",
+      "duplicados_exactos_coleccion.csv",
+      "duplicados_exactos_dominio.csv",
+      "duplicados_exactos_grupos_top.csv",
+      "duplicados_exactos_tamano_grupo.csv",
+      "fechas_anual.csv",
+      "fechas_mensual.csv",
+      "fechas_resumen.csv",
+      "idioma_acuerdo.csv",
+      "idioma_acuerdo_longitud.csv",
+      "idioma_declarado.csv",
+      "idioma_matriz.csv",
+      "integridad_completitud.csv",
+      "integridad_conteos.csv",
+      "integridad_esquema.csv",
+      "integridad_recalculo.csv",
+      "integridad_unicidad.csv",
+      "muestras_distribucion.csv",
+      "muestras_representatividad.csv",
+      "ruido_coleccion.csv",
+      "ruido_dominio.csv",
+      "sesgo_campos_adquisicion.csv",
+      "sesgo_cardinalidad.csv",
+      "sesgo_concentracion_dominios.csv",
+      "sesgo_keyword_matches.csv",
+      "urls_resumen.csv",
+      "urls_tracking.csv"
+    ],
+    "figures": [
+      "tokens_ecdf.png",
+      "longitud_caracteres.png",
+      "idioma_matriz.png",
+      "idioma_acuerdo_longitud.png",
+      "fechas_mensual.png",
+      "dominios_top.png",
+      "ruido.png"
+    ],
+    "work": [
+      "data/eda/document_features.parquet",
+      "data/eda/near_duplicate_pairs_10000.parquet"
+    ]
+  }
+}

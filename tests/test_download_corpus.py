@@ -61,7 +61,35 @@ def test_unknown_corpus_fails(tmp_path, source):
     with pytest.raises(ValueError):
         corpus.fetch_corpus('no_existe', tmp_path / 'x.parquet')
 
-def test_sha256_file(tmp_path):
-    path = tmp_path / 'f.bin'
-    path.write_bytes(b'abc' * 1000)
-    assert corpus.sha256_file(path, block_size=7) == hashlib.sha256(b'abc' * 1000).hexdigest()
+@pytest.fixture
+def drive(monkeypatch, source):
+    """Simula gdown: escribe el contenido configurado en la ruta pedida y registra el id."""
+    _, entry = source
+    entry['manifiesto_url'] = 'https://drive.google.com/file/d/ABC123-x_y/view?usp=drivesdk'
+    state = {'content': '{"rows": 3}', 'ids': []}
+    def download(id, output, **kwargs):
+        state['ids'].append(id)
+        with open(output, 'w', encoding='utf-8') as target: target.write(state['content'])
+        return output
+    monkeypatch.setattr(corpus.gdown, 'download', download)
+    return state
+
+def test_manifest_is_downloaded_and_not_overwritten(tmp_path, drive):
+    output = tmp_path / 'documentos.manifest.json'
+    assert corpus.fetch_manifest('demo', output)['status'] == 'downloaded'
+    assert drive['ids'] == ['ABC123-x_y'] and output.read_text() == '{"rows": 3}'
+    drive['content'] = '{"rows": 4}'
+    assert corpus.fetch_manifest('demo', output)['status'] == 'skipped'
+    assert output.read_text() == '{"rows": 3}'
+    assert corpus.fetch_manifest('demo', output, force=True)['status'] == 'downloaded'
+    assert output.read_text() == '{"rows": 4}'
+
+def test_invalid_manifest_leaves_no_file(tmp_path, drive):
+    drive['content'] = '<html>no es json</html>'
+    output = tmp_path / 'out' / 'documentos.manifest.json'
+    with pytest.raises(ValueError):
+        corpus.fetch_manifest('demo', output)
+    assert list(output.parent.iterdir()) == []
+
+def test_manifest_unavailable_without_url(tmp_path, source):
+    assert corpus.fetch_manifest('demo', tmp_path / 'm.json') == {'status': 'unavailable', 'output': None}
