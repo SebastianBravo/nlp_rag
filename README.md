@@ -93,6 +93,26 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 
 La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
 
+### Reproducir los resultados desde cero
+
+`data/` no se versiona, así que en una máquina nueva los artefactos se regeneran en este orden. Tarda unos 5 minutos, más la descarga del corpus (245 MB) y del encoder (unos 470 MB, solo la primera vez).
+
+```bash
+docker compose --profile tools run --rm pipeline python -m scripts.download_corpus
+docker compose --profile tools run --rm pipeline python -m scripts.profile_corpus
+for n in 2000 10000; do for s in A B; do
+  docker compose --profile tools run --rm pipeline python -m scripts.build_chunks --strategy $s --sample data/samples/sample_${n}_ids.txt
+done; done
+```
+
+Si el entorno reproduce los resultados, `git status` solo muestra cambios en fechas, duraciones y tiempos:
+- `reports/eda/profile.json`;
+- `data/samples/*_meta.json`;
+- `reports/chunking/runs/*.json`;
+- las columnas de tiempo de `reports/chunking/tables/comparacion_*.csv`.
+
+Las demás tablas, las figuras y las listas de IDs salen idénticas.
+
 ## API
 
 | Método | Ruta | Descripción |
