@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 .idea/
 .ipynb_checkpoints/
+.DS_Store
 
 # Datos: el corpus y sus derivados no se versionan. Solo data/README.md y listas de IDs en data/samples/.
 data/**
