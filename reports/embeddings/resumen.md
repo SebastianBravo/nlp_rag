@@ -121,7 +121,7 @@ Se usaron las 15 preguntas respondibles del split `dev` del gold, que todavía e
 | 3 | Cargar los modelos en float32 | En bfloat16 la CPU del contenedor fue unas 16 veces más lenta |
 | 4 | Medir los chunks con el tokenizador de e5-small, fijado | Los chunks no dependen del encoder de vectorización |
 | 5 | Guardar los vectores en Parquet por partes reanudables antes de Milvus | Separa la vectorización, que es la etapa más costosa, de la indexación |
-| 6 | La API pasa a granite en la Fase D, con una colección nueva por estrategia (`rag_granite97m_sent256_v1` para B) | Nunca se mezclan vectores de dos encoders |
+| 6 | La API pasa a granite en la Fase D, con una colección nueva por estrategia y muestra (`rag_granite97m_sent256_s10k_v1` para B; ver `reports/milvus/resumen.md`) | Nunca se mezclan vectores de dos encoders |
 | 7 | No se compara la calidad de varios encoders con el gold; la elección se apoya en el costo medido y en benchmarks publicados | Por tiempo, por decisión del equipo |
 
 ## Limitaciones

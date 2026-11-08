@@ -1,0 +1,103 @@
+{
+  "created_at_utc": "2026-11-08T23:10:53+00:00",
+  "config": {
+    "encoders_config": "configs/encoders.yaml",
+    "encoder": "granite-97m",
+    "chunker": "e5-small",
+    "collections": {
+      "sent256_s2k": {
+        "name": "rag_granite97m_sent256_s2k_v1",
+        "strategy": "B",
+        "sample": "sample_2000"
+      },
+      "win256_s2k": {
+        "name": "rag_granite97m_win256_s2k_v1",
+        "strategy": "A",
+        "sample": "sample_2000"
+      },
+      "sent256_s10k": {
+        "name": "rag_granite97m_sent256_s10k_v1",
+        "strategy": "B",
+        "sample": "sample_10000"
+      },
+      "win256_s10k": {
+        "name": "rag_granite97m_win256_s10k_v1",
+        "strategy": "A",
+        "sample": "sample_10000"
+      }
+    },
+    "adversarial": {
+      "key": "sent256_adv",
+      "name": "rag_granite97m_sent256_adv_v1",
+      "strategy": "B",
+      "base_sample": "sample_10000",
+      "synthetic": "data/gold/synthetic/synthetic_docs.jsonl",
+      "gold": "data/gold/gold.jsonl",
+      "questions": [
+        "Q45",
+        "Q46",
+        "Q47",
+        "Q48"
+      ]
+    },
+    "index": {
+      "type": "HNSW",
+      "metric": "COSINE",
+      "M": 16,
+      "efConstruction": 200,
+      "scalar": {
+        "language": "INVERTED",
+        "collection_name": "INVERTED",
+        "source": "INVERTED",
+        "created_at": "STL_SORT"
+      }
+    },
+    "search": {
+      "ef": 64,
+      "ef_candidates": [
+        16,
+        32,
+        64,
+        128,
+        256
+      ],
+      "target_recall": 0.99,
+      "calibration_collection": "sent256_s10k",
+      "random_queries": 500,
+      "seed": 7
+    },
+    "ingest": {
+      "batch_size": 500,
+      "retries": 5,
+      "backoff_seconds": 2,
+      "checkpoint_dir": "data/milvus"
+    },
+    "dates": {
+      "plausible_start": {
+        "bluesky_posts": "2023-01-01"
+      }
+    },
+    "fields": {
+      "text_max": 16384,
+      "title_max": 32768,
+      "url_max": 8192,
+      "provenance_capacity": 4096
+    }
+  },
+  "ef_configured": 64,
+  "ef_chosen": 64,
+  "gold_sha256": "daf22034c7214995596afd0264043e0fa0175f74f60470647731c419768d54e6",
+  "dev_questions": 15,
+  "calibration_queries": 545,
+  "outputs": {
+    "tables": [
+      "calibracion_ef.csv",
+      "conteos.csv",
+      "filtros.csv",
+      "metricas_dev.csv"
+    ],
+    "figures": [
+      "calibracion_ef.png"
+    ]
+  }
+}

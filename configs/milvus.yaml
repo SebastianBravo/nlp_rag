@@ -1,0 +1,56 @@
+# Indexación en Milvus (Fase D). Se copia a los metadatos de cada carga y verificación.
+# Nombre de colección = encoder + segmentación + alcance + versión; nunca se mezclan vectores de dos configuraciones.
+encoders_config: configs/encoders.yaml
+encoder: granite-97m                # perfil de vectorización (consultas y pasajes)
+chunker: e5-small                   # perfil con el que se segmentaron los chunks (para los documentos sintéticos)
+
+collections:
+  sent256_s2k:  {name: rag_granite97m_sent256_s2k_v1,  strategy: B, sample: sample_2000}
+  win256_s2k:   {name: rag_granite97m_win256_s2k_v1,   strategy: A, sample: sample_2000}
+  sent256_s10k: {name: rag_granite97m_sent256_s10k_v1, strategy: B, sample: sample_10000}
+  win256_s10k:  {name: rag_granite97m_win256_s10k_v1,  strategy: A, sample: sample_10000}
+
+adversarial:
+  # Documentos sintéticos con inyección de prompt (gold Q45-Q48) más los documentos reales de esas preguntas.
+  # Nunca se mezclan con las colecciones generales.
+  key: sent256_adv
+  name: rag_granite97m_sent256_adv_v1
+  strategy: B
+  base_sample: sample_10000
+  synthetic: data/gold/synthetic/synthetic_docs.jsonl
+  gold: data/gold/gold.jsonl
+  questions: [Q45, Q46, Q47, Q48]
+
+index:
+  type: HNSW
+  metric: COSINE
+  M: 16                             # vecinos por nodo del grafo
+  efConstruction: 200               # amplitud de búsqueda al construir el grafo
+  scalar:                           # índices para los filtros
+    language: INVERTED
+    collection_name: INVERTED
+    source: INVERTED
+    created_at: STL_SORT
+
+search:
+  ef: 64                            # elegido con la calibración (reports/milvus/tables/calibracion_ef.csv)
+  ef_candidates: [16, 32, 64, 128, 256]
+  target_recall: 0.99               # el ef elegido es el menor con recall@10 frente a la búsqueda exacta >= este valor
+  calibration_collection: sent256_s10k
+  random_queries: 500               # vectores de chunks al azar, además de las consultas de dev
+  seed: 7
+
+ingest:
+  batch_size: 500
+  retries: 5
+  backoff_seconds: 2                # espera exponencial entre reintentos: 2, 4, 8...
+  checkpoint_dir: data/milvus       # progreso de cada carga (no se versiona)
+
+dates:
+  plausible_start: {bluesky_posts: '2023-01-01'}
+
+fields:                             # límites de VARCHAR en bytes y capacidad de listas
+  text_max: 16384
+  title_max: 32768
+  url_max: 8192
+  provenance_capacity: 4096

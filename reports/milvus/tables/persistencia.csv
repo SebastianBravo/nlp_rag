@@ -1,0 +1,6 @@
+collection,entities_before,entities_after,same_count,same_top_results
+rag_granite97m_sent256_s2k_v1,7517,7517,True,True
+rag_granite97m_win256_s2k_v1,6659,6659,True,True
+rag_granite97m_sent256_s10k_v1,37919,37919,True,True
+rag_granite97m_win256_s10k_v1,33431,33431,True,True
+rag_granite97m_sent256_adv_v1,36,36,True,True

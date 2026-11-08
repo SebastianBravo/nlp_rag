@@ -5,6 +5,7 @@ Este documento reúne las decisiones de diseño del proyecto, con las alternativ
 - `reports/eda/`: perfilado del corpus;
 - `reports/chunking/`: segmentación;
 - `reports/embeddings/`: encoder;
+- `reports/milvus/`: indexación;
 - `data/gold/README.md`: gold estándar.
 
 ## Infraestructura y reproducibilidad
@@ -79,3 +80,20 @@ Este documento reúne las decisiones de diseño del proyecto, con las alternativ
 | 41 | El encoder se analiza solo con `dev`, con búsqueda exacta y métricas a nivel documento | Usar `test`; evaluar en Milvus | `test` queda intacto y el análisis no depende de los parámetros del índice |
 | 42 | No se compara la calidad de varios encoders con el gold; la elección se apoya en el costo medido y en benchmarks publicados | Ablación con un segundo encoder | Por tiempo, por decisión del equipo |
 | 43 | La API adopta granite al indexar en Milvus, con una colección nueva por estrategia | Cambiarla ya | Hasta entonces la API sigue con e5-small y su colección piloto; nunca se mezclan vectores de dos encoders |
+
+## Indexación en Milvus (Fase D)
+
+Detalle y cifras en `reports/milvus/resumen.md`.
+
+| # | Decisión | Alternativas | Motivo y evidencia |
+|---|---|---|---|
+| 44 | Se indexan un piloto de 2.000 documentos y la muestra de 10.000, cada una con A y B en colecciones separadas. El nombre sigue `rag_<encoder>_<segmentación>_<muestra>_v<n>`, por ejemplo `rag_granite97m_sent256_s10k_v1` | Corpus completo; una sola colección | La muestra de 10.000 contiene los 53 documentos de evidencia del gold; el piloto solo 7, así que sirve para iterar, no para medir. El corpus completo costaría unas 10 horas de vectorización. Con A y B indexadas, la ablación de segmentación queda lista |
+| 45 | Campos filtrables: `language` con el idioma declarado o, si falta, el detectado (con `language_source`); `created_at` como época UTC en segundos, nula si falta, con su precisión y su plausibilidad; `provenance_ids` como lista | Solo el idioma declarado; la fecha como texto | Los 763 chunks de Bluesky sin idioma declarado se pueden filtrar. El 95 % de la prensa tiene fecha sin hora, y la precisión lo deja explícito. Las ventanas de fecha de Q51 y Q52 necesitan un rango numérico |
+| 46 | Índice HNSW con métrica COSINE, M = 16 y efConstruction = 200 | AUTOINDEX; FLAT; IVF_FLAT | Parámetros documentados y calibrables; valores estándar para decenas de miles de vectores. En dev, Milvus da las mismas métricas que la búsqueda exacta con A y con B |
+| 47 | `ef = 64` en búsqueda, por una regla fijada antes de medir: el menor `ef` con Recall@10 medio ≥ 0,99 frente a la búsqueda exacta | `ef = 128` | Con 545 consultas (45 de dev y 500 chunks al azar): Recall@10 de 0,996 y 0,81 ms de mediana. El peor caso (0,40) es una paráfrasis con vecinos casi empatados; `ef = 128` lo sube a 0,90 por 0,15 ms más, una opción si la evaluación lo pide |
+| 48 | Índices escalares INVERTED en `language`, `collection_name` y `source`, y STL_SORT en `created_at` | Sin índice escalar | Filtros por igualdad y por rango de fecha; los 6 filtros probados devuelven solo entidades que los cumplen |
+| 49 | La ingesta lee los Parquet de chunks y de vectores y hace `upsert` por lotes de 500, con reintentos (esperas de 2, 4, 8… s), progreso para retomar y verificación de conteos al final | `insert`; vectorizar dentro de la ingesta | Repetir la carga no duplica: se cargó de nuevo `sent256_s2k` y siguió con 7.517 entidades. Las 5 colecciones tienen tantas entidades como chunks sus Parquet y las conservan tras reiniciar Milvus |
+| 50 | Los vectores del piloto se toman de la muestra de 10.000 por el hash del texto del chunk | Vectorizar el piloto aparte | La muestra de 2.000 está dentro de la de 10.000 y la segmentación es determinista: se reutilizó el 100 % de los vectores (7.517 de B y 6.659 de A) |
+| 51 | Colección adversarial aparte con los chunks de los documentos de Q45-Q48 y los 4 documentos sintéticos (36 chunks) | Agregar los sintéticos a la colección general | Aplica la decisión 31: no contaminan el índice ni las métricas de recuperación |
+| 52 | La API busca en `rag_granite97m_sent256_s10k_v1` con granite y `ef` desde `.env`; las colecciones las crea solo la ingesta. Se elimina la ingesta piloto por caracteres | Que la API cree la colección si no existe | El esquema y los índices quedan en un solo lugar; la API solo busca. Cierra la decisión 43 |
+| 53 | El filtro de fecha usa la fecha del documento canónico de cada chunk | Guardar las fechas de todas las procedencias | Afecta a 176 chunks de 37.919 en `sent256_s10k` (0,5 %): los que tienen procedencias de días distintos |

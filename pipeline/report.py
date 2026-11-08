@@ -310,3 +310,30 @@ def language_recall_plot(by_language, path, metric='recall@10'):
     ax.set_title('Recuperación entre idiomas (dev)')
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.18), ncols=2, fontsize=8)
     return _save(fig, path)
+
+# --- Milvus (Fase D) ---
+def ef_calibration_plot(calibration, path, k=10):
+    """Recall@k frente a la búsqueda exacta y latencia por consulta según ef (dos paneles, cada uno con su escala)."""
+    fig, axes = _figure(10, 4, ncols=2)
+    data = calibration.sort_values('ef')
+    recall, latency = axes
+    recall.plot(data['ef'], data[f'recall@{k}_mean'], color=COLLECTION_COLORS['bluesky_posts'], lw=2, marker='o', markersize=6, label='media')
+    recall.plot(data['ef'], data[f'recall@{k}_min'], color=MUTED, lw=1.5, ls='--', marker='o', markersize=5, label='mínimo')
+    recall.set_ylim(0, 1.02)
+    _percent_axis(recall.yaxis)
+    recall.set_ylabel(f'Recall@{k} frente a la búsqueda exacta')
+    recall.set_title('Calidad del índice HNSW')
+    latency.plot(data['ef'], data['latency_ms_p50'], color=COLLECTION_COLORS['url_crawls'], lw=2, marker='o', markersize=6, label='p50')
+    latency.plot(data['ef'], data['latency_ms_p95'], color=MUTED, lw=1.5, ls='--', marker='o', markersize=5, label='p95')
+    latency.set_ylim(bottom=0)
+    latency.set_ylabel('Latencia por consulta (ms)')
+    latency.set_title('Costo de la búsqueda')
+    for ax in axes:
+        ax.set_xscale('log', base=2)
+        ax.set_xticks(list(data['ef']), [str(int(e)) for e in data['ef']])
+        ax.set_xlabel('ef (amplitud de búsqueda)')
+        ax.legend(loc='lower right', fontsize=8)
+        chosen = data.loc[data['chosen'], 'ef'] if 'chosen' in data.columns else []
+        for e in chosen: ax.axvline(e, color=INK_2, lw=1, ls=':')
+    fig.tight_layout()
+    return _save(fig, path)

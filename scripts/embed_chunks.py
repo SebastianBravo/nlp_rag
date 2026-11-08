@@ -23,23 +23,39 @@ def main():
     p.add_argument('--out',default='data/embeddings')
     p.add_argument('--reports',default='reports/embeddings')
     p.add_argument('--part-size',type=int,default=1024)
+    p.add_argument('--reuse',help='muestra cuyos vectores se reutilizan para los textos iguales (p. ej. sample_10000)')
     args=p.parse_args()
     profile=yaml.safe_load(Path(args.config).read_text(encoding='utf-8'))['profiles'][args.encoder]
     chunks_path=Path(args.chunks_dir)/args.strategy/f'{args.sample}.parquet'
     out=Path(args.out)/args.encoder/args.strategy/f'{args.sample}.parquet'
-    chunks=pd.read_parquet(chunks_path,columns=['chunk_id','text'])
+    chunks=pd.read_parquet(chunks_path,columns=['chunk_id','text','chunk_sha256'])
     log=lambda m: print(f'· {m}',file=sys.stderr,flush=True)
     log(f'{len(chunks)} chunks de {chunks_path} con {profile["model"]}')
     started=time.perf_counter()
-    computed=embedding.embed_in_parts(chunks['chunk_id'].tolist(),chunks['text'].tolist(),
-                                      lambda t: embed_array(t,'passage',profile,profile.get('batch_size',32)),
-                                      lambda t: count_tokens(t,'passage',profile),out,args.part_size,log)
+    embed_fn=lambda t: embed_array(t,'passage',profile,profile.get('batch_size',32))
+    count_fn=lambda t: count_tokens(t,'passage',profile)
+    reused=0
+    if args.reuse:
+        vectors,tokens=embedding.reuse_vectors(chunks['chunk_sha256'],Path(args.chunks_dir)/args.strategy/f'{args.reuse}.parquet',
+                                               Path(args.out)/args.encoder/args.strategy/f'{args.reuse}.parquet')
+        missing=[i for i,v in enumerate(vectors) if v is None]
+        reused=len(chunks)-len(missing)
+        log(f'{reused} vectores reutilizados de {args.reuse}; {len(missing)} por calcular')
+        if missing:
+            texts=chunks['text'].iloc[missing].tolist()
+            for i,v,n in zip(missing,embed_fn(texts),count_fn(texts)): vectors[i],tokens[i]=v,n
+        out.parent.mkdir(parents=True,exist_ok=True)
+        import pyarrow.parquet as pq
+        pq.write_table(embedding.vectors_table(chunks['chunk_id'],np.vstack(vectors),tokens),out)
+        computed=parts=1 if missing else 0
+    else:
+        computed=embedding.embed_in_parts(chunks['chunk_id'].tolist(),chunks['text'].tolist(),embed_fn,count_fn,out,args.part_size,log)
     seconds=time.perf_counter()-started
     ids,matrix,n_tokens=embedding.read_vectors(out)
     limit=max_tokens(profile)
     if (n_tokens>limit).any(): raise SystemExit(f'{int((n_tokens>limit).sum())} chunks superan {limit} tokens del encoder.')
     norms=np.linalg.norm(matrix,axis=1)
-    parts=-(-len(chunks)//args.part_size)
+    parts=parts if args.reuse else -(-len(chunks)//args.part_size)
     info=report.to_jsonable({
         'created_at_utc':datetime.now(timezone.utc).isoformat(timespec='seconds'),'encoder':args.encoder,
         'settings':settings(profile),'strategy':args.strategy,'sample':args.sample,
@@ -47,8 +63,8 @@ def main():
         'output':str(out),'dimension':int(matrix.shape[1]),'max_tokens':limit,
         'n_tokens':{'p50':float(np.median(n_tokens)),'p95':float(np.percentile(n_tokens,95)),'max':int(n_tokens.max())},
         'norm':{'mean':float(norms.mean()),'min':float(norms.min()),'max':float(norms.max())},
-        'parts':{'total':parts,'computed_now':computed},
-        'seconds':round(seconds,1),'chunks_per_second':round(len(chunks)/seconds,2) if computed==parts else None,
+        'parts':{'total':parts,'computed_now':computed},'reused_from':args.reuse,'reused_vectors':reused,
+        'seconds':round(seconds,1),'chunks_per_second':round(len(chunks)/seconds,2) if computed==parts and not args.reuse else None,
         'peak_rss_mb':round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024),
         'versions':{'python':platform.python_version(),**{n:version(n) for n in ('torch','transformers','sentence-transformers')}}})
     report.write_json(info,Path(args.reports)/'runs'/f'{args.encoder}_{args.strategy}_{args.sample}.json')

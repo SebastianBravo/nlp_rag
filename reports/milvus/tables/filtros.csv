@@ -1,0 +1,7 @@
+check,filter,results,all_match
+idioma húngaro,"language == ""hu""",20,True
+solo Bluesky,"collection_name == ""bluesky_posts""",20,True
+prensa en español,"collection_name == ""url_crawls"" and language == ""es""",20,True
+procedencia contiene un documento,"array_contains(provenance_ids, ""url_crawls:crawl_uq_0426fc50f28ae258b15a3b08_colombia_media_local_excel"")",6,True
+ventana de Q51,created_at >= 1740441600 and created_at < 1740787200,20,True
+ventana de Q52,created_at >= 1730419200 and created_at < 1733011200,20,True
