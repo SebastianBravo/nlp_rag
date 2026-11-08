@@ -12,6 +12,8 @@ data/**
 !data/samples/
 !data/samples/*.txt
 !data/samples/*.json
+!data/gold/
+!data/gold/**
 
 # Reportes: se versionan agregados (reports/eda, reports/chunking, reports/eval).
 # Las salidas crudas por ejecución pueden contener texto del corpus.
