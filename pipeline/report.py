@@ -244,3 +244,69 @@ def strategy_metrics_plot(table, path, collection='total'):
     ax.set_title('Comparación intrínseca de estrategias (todas las colecciones)')
     ax.legend(loc='lower right')
     return _save(fig, path)
+
+# --- Encoder (Fase C) ---
+METRIC_COLORS = {'recall@5': '#2a78d6', 'recall@10': '#eb6834', 'ndcg@10': '#1baf7a', 'mrr': '#eda100'}
+VARIANT_LABELS = {'perfil': 'formato del perfil', 'prefijo_e5': 'con prefijo "query: "', 'sin_filtro_fecha': 'sin filtro de fecha',
+                  'parafrasis': 'paráfrasis', 'traduccion': 'traducción'}
+
+def variant_metrics_plot(summary, path):
+    """Métricas de recuperación (dev) por variante de consulta."""
+    variants = list(summary['variant'])
+    fig, ax = _figure(9, 4.5)
+    width = 0.8 / len(METRIC_COLORS)
+    x = np.arange(len(variants))
+    for offset, (metric, color) in enumerate(METRIC_COLORS.items()):
+        values = summary[metric].to_numpy(dtype=float)
+        ax.bar(x + (offset - (len(METRIC_COLORS) - 1) / 2) * width, values, width=width * 0.92, color=color, label=metric)
+    ax.set_xticks(x, [VARIANT_LABELS.get(v, v) for v in variants], rotation=15, ha='right')
+    ax.set_ylim(0, 1.05)
+    _percent_axis(ax.yaxis)
+    ax.grid(axis='x', visible=False)
+    ax.set_ylabel(f'Promedio en dev (n = {int(summary["n"].iloc[0])})')
+    ax.set_title('Recuperación por variante de consulta')
+    ax.legend(loc='upper right', ncols=4, fontsize=8)
+    return _save(fig, path)
+
+def matryoshka_plot(mrl, path):
+    """Recall@10 y nDCG@10 según la dimensión, con y sin renormalizar."""
+    fig, ax = _figure(8, 4)
+    for metric, color in (('recall@10', METRIC_COLORS['recall@10']), ('ndcg@10', METRIC_COLORS['ndcg@10'])):
+        for renorm, style in ((True, '-'), (False, '--')):
+            sub = mrl[mrl['renormalized'] == renorm].sort_values('dimension')
+            if sub.empty: continue
+            ax.plot(sub['dimension'], sub[metric], style, color=color, lw=2, marker='o', markersize=6,
+                    label=f'{metric} {"renormalizado" if renorm else "sin renormalizar"}')
+    ax.set_xscale('log', base=2)
+    ax.set_xticks(sorted(mrl['dimension'].unique()), [str(d) for d in sorted(mrl['dimension'].unique())])
+    ax.set_ylim(0, 1.05)
+    _percent_axis(ax.yaxis)
+    ax.set_xlabel('Dimensiones conservadas al recortar el vector')
+    ax.set_ylabel('Promedio en dev')
+    ax.set_title('Sensibilidad a la dimensión del vector')
+    ax.legend(loc='lower right', fontsize=8)
+    return _save(fig, path)
+
+def language_recall_plot(by_language, path, metric='recall@10'):
+    """Recall@10 por idioma de la evidencia, con la pregunta original y traducida."""
+    data = by_language[by_language['group'] != 'total']
+    groups = list(dict.fromkeys(data['group']))
+    fig, ax = _figure(7, 4)
+    width = 0.38
+    x = np.arange(len(groups))
+    for offset, (consulta, color) in zip((-width / 2, width / 2), (('original', '#2a78d6'), ('traduccion', '#eb6834'))):
+        sub = data[data['consulta'] == consulta].set_index('group').reindex(groups)
+        ax.bar(x + offset, sub[metric], width=width * 0.95, color=color,
+               label='pregunta original' if consulta == 'original' else 'pregunta traducida')
+        for xi, value in zip(x + offset, sub[metric]):
+            if pd.notna(value):
+                ax.annotate(f'{value:.0%}', (xi, value), xytext=(0, 3), textcoords='offset points', ha='center', fontsize=8, color=INK_2)
+    counts = data[data['consulta'] == 'original'].set_index('group').reindex(groups)['n']
+    ax.set_xticks(x, [f'evidencia {g}\n(n = {int(n)})' for g, n in zip(groups, counts)])
+    ax.set_ylim(0, 1.1)
+    _percent_axis(ax.yaxis)
+    ax.grid(axis='x', visible=False)
+    ax.set_ylabel(metric)
+    ax.set_title('Recuperación entre idiomas (dev)')
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.18), ncols=2, fontsize=8)
+    return _save(fig, path)

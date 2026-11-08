@@ -1,0 +1,47 @@
+# Perfiles de encoder. `revision` fija el commit de Hugging Face para que los vectores se puedan reproducir.
+# La API usa las variables de .env; los scripts del pipeline eligen un perfil por nombre.
+# Las consultas y los pasajes de una colección se codifican con el mismo perfil; cambiarlo exige otra colección.
+profiles:
+  e5-small:
+    # Tokenizador de referencia del perfilado (Fase A) y de la segmentación (Fase B): mide el tamaño de los chunks.
+    model: intfloat/multilingual-e5-small
+    revision: 614241f622f53c4eeff9890bdc4f31cfecc418b3
+    query_prefix: "query: "
+    passage_prefix: "passage: "
+    normalize: true
+    dimension: null
+
+  granite-97m:
+    # Encoder elegido para vectorizar (Fase C). No usa prefijos ni instrucciones; CLS + normalización L2.
+    model: ibm-granite/granite-embedding-97m-multilingual-r2
+    revision: 835ad14087e140460703cf0fae09f97d469d65c2
+    query_prefix: ""
+    passage_prefix: ""
+    normalize: true
+    dimension: null           # 384
+    batch_size: 32
+
+  qwen3-0.6b:
+    # Candidato de mayor calidad, descartado por costo en CPU: solo se usa en la medición de costos.
+    model: Qwen/Qwen3-Embedding-0.6B
+    revision: 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3
+    query_prefix: "Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:"
+    passage_prefix: ""
+    normalize: true
+    dimension: null
+    batch_size: 8
+
+benchmark:
+  # Medición de costo en CPU dentro del contenedor: mismos chunks y lote para todos los perfiles.
+  profiles: [e5-small, granite-97m, qwen3-0.6b]
+  chunks: data/chunks/B/sample_10000.parquet
+  n: 256
+  batch_size: 32
+  seed: 1
+
+analysis:
+  # Variantes de formato de la consulta que se prueban además de la del perfil (prefijo -> texto).
+  query_variants:
+    prefijo_e5: "query: "
+  dimensions: [384, 256, 128]   # granite-97m no se entrenó con Matryoshka: se mide cuánto pierde al recortar
+  neighbors: 5

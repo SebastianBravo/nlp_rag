@@ -9,6 +9,7 @@ Conjunto de 52 preguntas con evidencia anotada para evaluar el pipeline RAG del 
 | Archivo | Contenido |
 |---|---|
 | `gold.jsonl` | Una pregunta por línea (52). |
+| `parafrasis_dev.jsonl` | Una paráfrasis y una traducción al otro idioma de cada pregunta respondible de `dev` (15), para las pruebas de sensibilidad del encoder. Autor y revisión: Javier; segunda validación: Sebastián. |
 | `synthetic/synthetic_docs.jsonl` | 4 documentos sintéticos (SYN-01 a SYN-04) para Q45–Q48 (inyección de prompt). |
 
 El corpus (parquet) no se versiona. Este directorio solo tiene preguntas, claves de documento, offsets y respuestas de referencia; no contiene texto del corpus.
@@ -44,7 +45,7 @@ Partición: **20 `dev`** y **32 `test`** (campo `split`).
 | `debe_abstenerse` | `true` si la respuesta correcta es "no consta" |
 | `criterio`, `notas` | Qué hay que comprobar además del dato y salvedades |
 | `pooling_pendiente` | `true` si los relevantes o las ausencias deben confirmarse con la colección completa |
-| `anotador_1`, `anotador_2`, `estado` | Trazabilidad de la anotación. Q49–Q52 las propuso Claude Code y las revisó Sebastián (`borrador_revisado_por_Sebastián`) |
+| `anotador_1`, `anotador_2`, `estado` | Trazabilidad de la anotación. Q49–Q52 las revisó Sebastián (`borrador_revisado_por_Sebastián`) |
 
 **Escala de relevancia (`grado`):** 2 = el documento responde (o aporta parte de la respuesta); 1 = contexto parcial; 0 = no relevante.
 
@@ -87,7 +88,7 @@ El LLM-judge (un modelo local distinto de los evaluados) solo complementa la rev
 | Pendiente | Qué hay que hacer | Estado |
 |---|---|---|
 | Pooling | Para cada pregunta, consultar las colecciones de Milvus de ambas estrategias de chunking (A y B, top-20 de cada una), unir los resultados a nivel documento y asignar el `grado` a cada documento. Confirmar las ausencias de las `sin_respuesta` contra la colección completa y completar los `relevantes` de las ambiguas. Guardar solo ids y ranks, sin texto del corpus. | Depende de la indexación en Milvus |
-| Revisión de Q49–Q52 | Las propuso Claude Code para cubrir preguntas en inglés y con ventana de fechas. Sebastián confirmó la pregunta, los intervalos, el `grado` y la respuesta de referencia. | Hecha |
+| Revisión de Q49–Q52 | Se agregaron para cubrir preguntas en inglés y con ventana de fechas. Sebastián confirmó la pregunta, los intervalos, el `grado` y la respuesta de referencia. | Hecha |
 | Segunda anotación | Un segundo anotador revisa de forma independiente al menos 16 preguntas, rellena `anotador_2` y se calcula el acuerdo entre anotadores. Sebastián es el segundo anotador de las 30 preguntas de `test` de Q01–Q48. Q50 y Q52 quedan fuera porque él ya figura como `anotador_1`. Para calcular el acuerdo falta registrar sus juicios (grado por documento y validez de la respuesta de referencia). | Anotación asignada; acuerdo pendiente |
 | Congelamiento | Cuando el pooling y la segunda anotación estén cerrados: `estado` pasa a `congelado`, se hace commit, se crea el tag `gold-v1` y se registra el hash en el informe. | Pendiente |
 

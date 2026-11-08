@@ -16,8 +16,10 @@ def main():
     p.add_argument('--work-dir',default='data/eda',help='artefactos intermedios por documento (no se versionan)')
     args=p.parse_args()
     with open(args.config,encoding='utf-8') as f: cfg=yaml.safe_load(f)
-    profile=run(args.input,cfg,args.out,args.samples_dir,args.work_dir,count_tokens=count_tokens,max_tokens=max_tokens(),
-                detect_languages=detect_languages,catalog=catalog_entry(args.corpus),encoder_settings=settings(),
+    with open(cfg['encoders_config'],encoding='utf-8') as f: encoder=yaml.safe_load(f)['profiles'][cfg['encoder_profile']]
+    profile=run(args.input,cfg,args.out,args.samples_dir,args.work_dir,count_tokens=lambda t: count_tokens(t,'passage',encoder),
+                max_tokens=max_tokens(encoder),detect_languages=detect_languages,catalog=catalog_entry(args.corpus),
+                encoder_settings=settings(encoder),
                 log=lambda m: print(f'· {m}',file=sys.stderr,flush=True))
     summary={k:profile[k] for k in ('integrity','distributions','duplicates','bias')}
     summary['samples']={k:v['size'] for k,v in profile['samples'].items()}

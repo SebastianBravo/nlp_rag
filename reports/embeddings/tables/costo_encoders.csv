@@ -1,0 +1,4 @@
+profile,model,revision,parameters_m,max_seq_length,rss_before_load_mb,chunks,seconds,chunks_per_second,dimension,peak_rss_mb,hours_per_100k_chunks,mb_per_100k_vectors
+e5-small,intfloat/multilingual-e5-small,614241f622f53c4eeff9890bdc4f31cfecc418b3,117.7,512,614,256,7.83,32.68,384,1505,0.85,153.6
+granite-97m,ibm-granite/granite-embedding-97m-multilingual-r2,835ad14087e140460703cf0fae09f97d469d65c2,97.4,32768,614,256,13.14,19.48,384,1862,1.43,153.6
+qwen3-0.6b,Qwen/Qwen3-Embedding-0.6B,97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3,595.8,32768,614,256,329.81,0.78,1024,6978,35.61,409.6
