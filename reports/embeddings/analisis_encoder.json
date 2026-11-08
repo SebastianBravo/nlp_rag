@@ -1,0 +1,81 @@
+{
+  "created_at_utc": "2026-11-08T22:21:06+00:00",
+  "profile": {
+    "model": "ibm-granite/granite-embedding-97m-multilingual-r2",
+    "revision": "835ad14087e140460703cf0fae09f97d469d65c2",
+    "query_prefix": "",
+    "passage_prefix": "",
+    "normalize": true,
+    "dimension": null,
+    "batch_size": 32
+  },
+  "chunks": {
+    "path": "data/chunks/B/sample_10000.parquet",
+    "sha256": "687362f9670abb4f74e7b3e7773f5c3d1958e826561d217d8ad6b262457443b8",
+    "n": 37919
+  },
+  "vectors": {
+    "path": "data/embeddings/granite-97m/B/sample_10000.parquet",
+    "dimension": 384,
+    "norm_mean": 1.0,
+    "norm_min": 0.9999998807907104
+  },
+  "gold": {
+    "path": "data/gold/gold.jsonl",
+    "sha256": "daf22034c7214995596afd0264043e0fa0175f74f60470647731c419768d54e6",
+    "split": "dev",
+    "questions": 15
+  },
+  "paraphrases": {
+    "path": "data/gold/parafrasis_dev.jsonl",
+    "sha256": "6c78ab8093e08937ca696a44386f9d49c76b093c495d574c88b4583f7700d68e"
+  },
+  "config": {
+    "query_variants": {
+      "prefijo_e5": "query: "
+    },
+    "dimensions": [
+      384,
+      256,
+      128
+    ],
+    "neighbors": 5
+  },
+  "variants": {
+    "perfil": {
+      "prefix": "",
+      "date_filter": true
+    },
+    "prefijo_e5": {
+      "prefix": "query: ",
+      "date_filter": true
+    },
+    "sin_filtro_fecha": {
+      "prefix": "",
+      "date_filter": false
+    },
+    "parafrasis": {
+      "prefix": "",
+      "date_filter": true
+    },
+    "traduccion": {
+      "prefix": "",
+      "date_filter": true
+    }
+  },
+  "outputs": {
+    "tables": [
+      "estabilidad_consultas.csv",
+      "matryoshka.csv",
+      "metricas_por_idioma.csv",
+      "metricas_por_pregunta.csv",
+      "metricas_variantes.csv",
+      "vecinos_ejemplo.csv"
+    ],
+    "figures": [
+      "variantes_consulta.png",
+      "matryoshka.png",
+      "idiomas.png"
+    ]
+  }
+}

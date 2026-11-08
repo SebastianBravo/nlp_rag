@@ -21,8 +21,10 @@ def main():
     if missing: raise SystemExit(f'Faltan {missing}: ejecuta antes scripts.profile_corpus (Fase A).')
     features=pd.read_parquet(cfg['features'],columns=['document_id','language_detected','has_mojibake'])
     lines=pd.read_parquet(cfg['boilerplate']['lines']) if cfg['boilerplate']['exclude'] else None
-    info=run(args.input,args.sample,args.strategy,cfg,args.out,args.reports,token_offsets=token_offsets,count_tokens=count_tokens,
-             max_tokens=max_tokens(),features=features,boilerplate_lines=lines,encoder_settings=settings(),
+    with open(cfg['encoders_config'],encoding='utf-8') as f: encoder=yaml.safe_load(f)['profiles'][cfg['encoder_profile']]
+    info=run(args.input,args.sample,args.strategy,cfg,args.out,args.reports,token_offsets=lambda t: token_offsets(t,encoder),
+             count_tokens=lambda t: count_tokens(t,'passage',encoder),max_tokens=max_tokens(encoder),features=features,
+             boilerplate_lines=lines,encoder_settings=settings(encoder),
              log=lambda m: print(f'· {m}',file=sys.stderr,flush=True))
     total=next(s for s in info['stats'] if s['collection_name']=='total')
     print(json.dumps({'strategy':info['strategy'],'sample':info['sample'],'documents':total['documents'],

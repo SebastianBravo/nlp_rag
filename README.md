@@ -28,7 +28,11 @@ flowchart LR
 
 `docker-compose.yml` solo incluye los archivos de `docker/`, uno por conjunto de servicios: `milvus.yml` (milvus, etcd, minio, attu), `ollama.yml`, `api.yml`, `frontend.yml` y `pipeline.yml`. Cada servicio propio tiene su Dockerfile en `docker/` y su lista de dependencias en `requirements/`.
 
-El encoder (`intfloat/multilingual-e5-small` por defecto) se carga desde un único módulo, `app/embeddings.py`, que usan tanto `api` como `pipeline`. Ambos servicios comparten el volumen `hf_cache` con los pesos del modelo, así que las consultas y los pasajes se codifican exactamente igual.
+El encoder se carga desde un único módulo, `app/embeddings.py`, que usan tanto `api` como `pipeline`. Ambos servicios comparten el volumen `hf_cache` con los pesos del modelo, así que las consultas y los pasajes se codifican exactamente igual.
+
+- **Corpus:** el encoder elegido es `ibm-granite/granite-embedding-97m-multilingual-r2` (perfiles en `configs/encoders.yaml`). La justificación, medida en el mismo contenedor, está en [`reports/embeddings/resumen.md`](reports/embeddings/resumen.md).
+- **API:** sigue usando `intfloat/multilingual-e5-small` desde `.env` hasta que se indexen los chunks en Milvus.
+- **Segmentación:** mide siempre el tamaño de los chunks con el tokenizador de e5-small, para que los chunks no cambien aunque cambie el encoder.
 
 ## Requisitos
 
@@ -89,13 +93,16 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 | `download_corpus` | Descarga `dragons_rag` con `open_corpus_co_es`, verifica tamaño y sha256 contra el catálogo y lo copia sin modificar a `data/documentos_rag.parquet`, junto con su manifiesto (`data/documentos_rag.manifest.json`). Opciones: `--output`, `--force` |
 | `profile_corpus` | Perfilado del corpus (integridad, longitudes y tokens, idioma, fechas, duplicados, URLs, ruido y sesgos) y muestras estratificadas. Escribe `reports/eda/`, `data/samples/` y artefactos intermedios en `data/eda/` (no versionados). Parámetros en `configs/eda.yaml`; tarda unos 3 minutos |
 | `build_chunks` | Segmenta una muestra con la estrategia A (ventana de 256 tokens con 32 de solapamiento) o B (párrafos y oraciones hasta 256 tokens, con una oración de solapamiento), deduplica conservando procedencias y actualiza la comparación en `reports/chunking/`. Los chunks quedan en `data/chunks/<estrategia>/<muestra>.parquet` (no versionados). Opciones: `--strategy A\|B`, `--sample` (lista de IDs o `full`). Requiere los artefactos de `profile_corpus` |
+| `benchmark_encoders` | Mide en CPU, dentro del contenedor, los chunks por segundo y la RAM de cada perfil de `configs/encoders.yaml` |
+| `embed_chunks` | Vectoriza los chunks de una estrategia y muestra con un perfil de encoder y escribe `data/embeddings/<perfil>/<estrategia>/<muestra>.parquet` (no versionado). Si se interrumpe, se puede reanudar. Opciones: `--encoder`, `--strategy`, `--sample` |
+| `encoder_report` | Analiza el encoder con las preguntas `dev` del gold: variantes de consulta, paráfrasis y traducción, idiomas, dimensión y vecinos de ejemplo. Escribe `reports/embeddings/` |
 | `ingest` | Ingesta piloto: chunking por caracteres (1000 con solapamiento de 150), embeddings y `upsert` idempotente en Milvus. Opciones: `--limit`, `--chunk-size`, `--overlap`, `--batch-size` |
 
 La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
 
 ### Reproducir los resultados desde cero
 
-`data/` no se versiona, así que en una máquina nueva los artefactos se regeneran en este orden. Tarda unos 5 minutos, más la descarga del corpus (245 MB) y del encoder (unos 470 MB, solo la primera vez).
+`data/` no se versiona, así que en una máquina nueva los artefactos se regeneran en este orden. El perfilado y la segmentación tardan unos 5 minutos, y la vectorización de la muestra de 10.000 con granite-97m, unos 35 minutos. A eso se suman las descargas del corpus (245 MB) y de los modelos (solo la primera vez).
 
 ```bash
 docker compose --profile tools run --rm pipeline python -m scripts.download_corpus
@@ -103,12 +110,14 @@ docker compose --profile tools run --rm pipeline python -m scripts.profile_corpu
 for n in 2000 10000; do for s in A B; do
   docker compose --profile tools run --rm pipeline python -m scripts.build_chunks --strategy $s --sample data/samples/sample_${n}_ids.txt
 done; done
+docker compose --profile tools run --rm pipeline python -m scripts.embed_chunks --encoder granite-97m --strategy B --sample sample_10000
+docker compose --profile tools run --rm pipeline python -m scripts.encoder_report --encoder granite-97m --strategy B --sample sample_10000
 ```
 
 Si el entorno reproduce los resultados, `git status` solo muestra cambios en fechas, duraciones y tiempos:
 - `reports/eda/profile.json`;
 - `data/samples/*_meta.json`;
-- `reports/chunking/runs/*.json`;
+- `reports/chunking/runs/*.json` y `reports/embeddings/runs/*.json`;
 - las columnas de tiempo de `reports/chunking/tables/comparacion_*.csv`.
 
 Las demás tablas, las figuras y las listas de IDs salen idénticas.
@@ -158,14 +167,14 @@ El perfilado completo (integridad, idioma, fechas, duplicados, ruido, sesgos) y 
 app/            servicios en línea: api.py, frontend.py, core.py (Milvus), embeddings.py (encoder)
 pipeline/       lógica batch reutilizable y testeable
 scripts/        CLI que se ejecutan en el contenedor pipeline (python -m scripts.<tarea>)
-configs/        parámetros YAML de las etapas (eda.yaml: perfilado; chunking.yaml: segmentación)
+configs/        parámetros YAML de las etapas (eda.yaml, chunking.yaml, encoders.yaml)
 notebooks/      exploración y narrativa; leen los artefactos de reports/, no recalculan
 docker/         compose por conjunto de servicios y un Dockerfile por servicio
 requirements/   dependencias por imagen (api, frontend, pipeline, torch-cpu) y dev.txt para local
 tests/          pruebas con pytest
 data/           corpus y derivados (no se versiona, salvo samples/)
-reports/        resultados agregados (eda/: perfilado del corpus; chunking/: comparación de segmentaciones)
-docs/           protocolo de evaluación (EVALUACION.md)
+reports/        resultados agregados (eda/, chunking/, embeddings/)
+docs/           protocolo de evaluación (EVALUACION.md) y registro de decisiones (decisiones.md)
 ```
 
 ## Desarrollo local y pruebas
@@ -185,11 +194,11 @@ El entorno local sirve para explorar. Toda cifra que se reporte sale de lo que c
 
 ## Estado actual y limitaciones
 
-La infraestructura está lista: servicios separados en Docker, contenedor de pipeline, descarga verificada del corpus y encoder compartido entre API y pipeline. El corpus está perfilado, hay muestras reproducibles y dos estrategias de segmentación por tokens comparadas en [`reports/chunking/resumen.md`](reports/chunking/resumen.md). Lo que sigue es indexar esos chunks en Milvus, la evaluación con un gold estándar propio y la comparación de al menos tres LLM. El protocolo de evaluación está en [`docs/EVALUACION.md`](docs/EVALUACION.md).
+La infraestructura está lista: servicios separados en Docker, contenedor de pipeline, descarga verificada del corpus y encoder compartido entre API y pipeline. El corpus está perfilado, hay muestras reproducibles dos estrategias de segmentación por tokens comparadas en [`reports/chunking/resumen.md`](reports/chunking/resumen.md) y un encoder elegido y analizado en [`reports/embeddings/resumen.md`](reports/embeddings/resumen.md). Las decisiones de diseño están en [`docs/decisiones.md`](docs/decisiones.md). Lo que sigue es indexar esos chunks en Milvus, la evaluación con un gold estándar propio y la comparación de al menos tres LLM. El protocolo de evaluación está en [`docs/EVALUACION.md`](docs/EVALUACION.md).
 
 Limitaciones actuales:
 
-- La API y `ingest` todavía usan el chunking piloto por caracteres. Las estrategias por tokens de `build_chunks` se indexarán en la fase de Milvus.
+- La API y `ingest` todavía usan el chunking piloto por caracteres y el encoder e5-small. Los chunks por tokens y los vectores de granite-97m se indexarán en la fase de Milvus.
 - La colección usa `AUTOINDEX` con métrica coseno y guarda el texto de cada fragmento en Milvus.
 - El contexto que se envía al LLM se recorta por caracteres, no por tokens.
 - `/health` no comprueba las dependencias.

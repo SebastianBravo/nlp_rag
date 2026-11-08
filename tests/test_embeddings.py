@@ -12,18 +12,19 @@ class FakeTokenizer:
 class FakeEncoder:
     """Registra lo que recibiría SentenceTransformer.encode sin descargar el modelo."""
     max_seq_length = 512
-    def __init__(self):
+    def __init__(self, vectors=None):
         self.calls = []
         self.tokenizer = FakeTokenizer()
-    def encode(self, texts, normalize_embeddings):
+        self.vectors = vectors
+    def encode(self, texts, normalize_embeddings, **kwargs):
         self.calls.append((texts, normalize_embeddings))
-        return np.zeros((len(texts), 3))
+        return self.vectors if self.vectors is not None else np.zeros((len(texts), 3))
 
 @pytest.fixture
 def fake(monkeypatch):
     enc = FakeEncoder()
-    monkeypatch.setattr(embeddings, 'encoder', lambda: enc)
-    for var in ('EMBEDDING_QUERY_PREFIX', 'EMBEDDING_PASSAGE_PREFIX', 'EMBEDDING_NORMALIZE'):
+    monkeypatch.setattr(embeddings, 'encoder', lambda profile=None: enc)
+    for var in ('EMBEDDING_QUERY_PREFIX', 'EMBEDDING_PASSAGE_PREFIX', 'EMBEDDING_NORMALIZE', 'EMBEDDING_DIMENSION'):
         monkeypatch.delenv(var, raising=False)
     return enc
 
@@ -44,6 +45,20 @@ def test_invalid_normalize_flag_fails(fake, monkeypatch):
     monkeypatch.setenv('EMBEDDING_NORMALIZE', 'quizas')
     with pytest.raises(ValueError):
         embeddings.embed(['a'])
+
+def test_profile_overrides_env(fake, monkeypatch):
+    monkeypatch.setenv('EMBEDDING_QUERY_PREFIX', 'query: ')
+    profile = {'model': 'm', 'revision': 'abc', 'query_prefix': 'Instruct: x\nQuery:', 'passage_prefix': None, 'normalize': True}
+    embeddings.embed(['¿qué?'], kind='query', profile=profile)
+    embeddings.embed(['pasaje'], profile=profile)
+    assert fake.calls == [(['Instruct: x\nQuery:¿qué?'], True), (['pasaje'], True)]
+    assert embeddings.settings(profile)['revision'] == 'abc' and embeddings.settings(profile)['dimension'] is None
+
+def test_matryoshka_dimension_truncates_and_renormalizes(fake):
+    fake.vectors = np.array([[3.0, 4.0, 12.0], [0.0, 2.0, 5.0]])
+    vectors = embeddings.embed_array(['a', 'b'], profile={'model': 'm', 'normalize': True, 'dimension': 2})
+    assert vectors.shape == (2, 2) and vectors.dtype == np.float32
+    assert np.allclose(vectors, [[0.6, 0.8], [0.0, 1.0]])
 
 def test_count_tokens_includes_prefix_and_special_tokens_without_truncation(fake):
     assert embeddings.count_tokens(['uno dos tres']) == [6]

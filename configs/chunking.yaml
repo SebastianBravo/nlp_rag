@@ -1,6 +1,10 @@
 # Parámetros de segmentación (Fase B). Se copian a reports/chunking/runs/<estrategia>_<muestra>.json en cada ejecución.
 # Si cambia una estrategia, sube su `version`: cambia el chunk_id y la colección Milvus correspondiente.
 batch_size: 2000                # documentos por lote al leer el texto
+# Tokenizador con el que se mide el presupuesto de los chunks. Queda fijo aunque el encoder de vectorización
+# sea otro, para que los chunks no cambien (perfiles en configs/encoders.yaml).
+encoders_config: configs/encoders.yaml
+encoder_profile: e5-small
 
 documents:
   # Grupos de prensa con el mismo texto repetido al menos min_copies veces son páginas plantilla

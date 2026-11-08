@@ -1,0 +1,56 @@
+{
+  "created_at_utc": "2026-11-08T22:10:20+00:00",
+  "benchmark": {
+    "profiles": [
+      "e5-small",
+      "granite-97m",
+      "qwen3-0.6b"
+    ],
+    "chunks": "data/chunks/B/sample_10000.parquet",
+    "n": 256,
+    "batch_size": 32,
+    "seed": 1
+  },
+  "python": "3.12.16",
+  "results": [
+    {
+      "profile": "e5-small",
+      "model": "intfloat/multilingual-e5-small",
+      "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+      "parameters_m": 117.7,
+      "max_seq_length": 512,
+      "rss_before_load_mb": 614,
+      "chunks": 256,
+      "seconds": 7.83,
+      "chunks_per_second": 32.68,
+      "dimension": 384,
+      "peak_rss_mb": 1505
+    },
+    {
+      "profile": "granite-97m",
+      "model": "ibm-granite/granite-embedding-97m-multilingual-r2",
+      "revision": "835ad14087e140460703cf0fae09f97d469d65c2",
+      "parameters_m": 97.4,
+      "max_seq_length": 32768,
+      "rss_before_load_mb": 614,
+      "chunks": 256,
+      "seconds": 13.14,
+      "chunks_per_second": 19.48,
+      "dimension": 384,
+      "peak_rss_mb": 1862
+    },
+    {
+      "profile": "qwen3-0.6b",
+      "model": "Qwen/Qwen3-Embedding-0.6B",
+      "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+      "parameters_m": 595.8,
+      "max_seq_length": 32768,
+      "rss_before_load_mb": 614,
+      "chunks": 256,
+      "seconds": 329.81,
+      "chunks_per_second": 0.78,
+      "dimension": 1024,
+      "peak_rss_mb": 6978
+    }
+  ]
+}

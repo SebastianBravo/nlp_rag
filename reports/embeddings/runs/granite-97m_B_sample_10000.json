@@ -1,0 +1,45 @@
+{
+  "created_at_utc": "2026-11-08T22:03:11+00:00",
+  "encoder": "granite-97m",
+  "settings": {
+    "model": "ibm-granite/granite-embedding-97m-multilingual-r2",
+    "revision": "835ad14087e140460703cf0fae09f97d469d65c2",
+    "query_prefix": "",
+    "passage_prefix": "",
+    "normalize": true,
+    "dimension": null
+  },
+  "strategy": "B",
+  "sample": "sample_10000",
+  "chunks": {
+    "path": "data/chunks/B/sample_10000.parquet",
+    "sha256": "687362f9670abb4f74e7b3e7773f5c3d1958e826561d217d8ad6b262457443b8",
+    "n": 37919
+  },
+  "output": "data/embeddings/granite-97m/B/sample_10000.parquet",
+  "dimension": 384,
+  "max_tokens": 32768,
+  "n_tokens": {
+    "p50": 198.0,
+    "p95": 250.0,
+    "max": 511
+  },
+  "norm": {
+    "mean": 1.0,
+    "min": 0.9999998807907104,
+    "max": 1.0000001192092896
+  },
+  "parts": {
+    "total": 38,
+    "computed_now": 38
+  },
+  "seconds": 2043.9,
+  "chunks_per_second": 18.55,
+  "peak_rss_mb": 2105,
+  "versions": {
+    "python": "3.12.16",
+    "torch": "2.15.0+cpu",
+    "transformers": "5.22.2",
+    "sentence-transformers": "5.7.0"
+  }
+}
