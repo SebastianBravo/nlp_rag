@@ -1,0 +1,6 @@
+ef,queries,recall@10_mean,recall@10_min,latency_ms_p50,latency_ms_p95,chosen,configured
+16,545,0.970459,0.2,0.697083,0.887159,False,False
+32,545,0.988624,0.3,0.761375,1.13749,False,False
+64,545,0.996147,0.4,0.813833,0.879125,True,True
+128,545,0.998899,0.9,0.965709,1.05843,False,False
+256,545,0.999817,0.9,1.24983,1.57548,False,False

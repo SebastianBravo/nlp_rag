@@ -1,0 +1,48 @@
+{
+  "created_at_utc": "2026-11-08T22:45:22+00:00",
+  "key": "sent256_s2k",
+  "strategy": "B",
+  "sample": "sample_2000",
+  "collection": "rag_granite97m_sent256_s2k_v1",
+  "created": false,
+  "entities": 7517,
+  "chunks": 7517,
+  "dimension": 384,
+  "seconds": 2.6,
+  "batches": 16,
+  "retries": 0,
+  "inputs": [
+    "data/chunks/B/sample_2000.parquet",
+    "data/embeddings/granite-97m/B/sample_2000.parquet"
+  ],
+  "encoder": {
+    "model": "ibm-granite/granite-embedding-97m-multilingual-r2",
+    "revision": "835ad14087e140460703cf0fae09f97d469d65c2",
+    "query_prefix": "",
+    "passage_prefix": "",
+    "normalize": true,
+    "dimension": null
+  },
+  "index": {
+    "type": "HNSW",
+    "metric": "COSINE",
+    "M": 16,
+    "efConstruction": 200,
+    "scalar": {
+      "language": "INVERTED",
+      "collection_name": "INVERTED",
+      "source": "INVERTED",
+      "created_at": "STL_SORT"
+    }
+  },
+  "ingest": {
+    "batch_size": 500,
+    "retries": 5,
+    "backoff_seconds": 2,
+    "checkpoint_dir": "data/milvus"
+  },
+  "versions": {
+    "python": "3.12.16",
+    "pymilvus": "2.6.18"
+  }
+}

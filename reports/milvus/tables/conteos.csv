@@ -1,0 +1,6 @@
+key,collection,parquet_chunks,milvus_entities,match
+sent256_s2k,rag_granite97m_sent256_s2k_v1,7517,7517,True
+win256_s2k,rag_granite97m_win256_s2k_v1,6659,6659,True
+sent256_s10k,rag_granite97m_sent256_s10k_v1,37919,37919,True
+win256_s10k,rag_granite97m_win256_s10k_v1,33431,33431,True
+sent256_adv,rag_granite97m_sent256_adv_v1,36,36,True

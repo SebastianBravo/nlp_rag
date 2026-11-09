@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 from pipeline import chunking, dedup
 from pipeline.profiling import hash_lines, normalize_lines
-from scripts.ingest import split
 
 A = {'chunk_tokens': 20, 'overlap_tokens': 4}
 B = {'chunk_tokens': 20, 'overlap_sentences': 1, 'paragraph_min_fill': 0.5}
@@ -25,12 +24,6 @@ def chunk(text, strategy, params=None, boilerplate=frozenset()):
     params = params or (A if strategy == 'A' else B)
     chunks, excluded = chunking.chunk_document(text, word_offsets(text), strategy, params, regex_sentences, boilerplate)
     return chunks, excluded
-
-def test_ingest_split_preserves_original_text_offsets():
-    text = 'abcdefghijklmnopqrstuvwxyz'
-    parts = list(split(text, 10, 3))
-    assert all(text[offset:offset + len(fragment)] == fragment for offset, fragment in parts)
-    assert parts[-1][0] + len(parts[-1][1]) == len(text)
 
 def test_chunk_id_is_deterministic():
     expected = hashlib.sha256(b'd1|A|1|0|10').hexdigest()[:32]
@@ -130,13 +123,18 @@ def test_dedup_keeps_canonical_and_all_provenances():
     summary = dedup.dedup_summary(chunks, removed).set_index('collection_name')
     assert summary.loc['total', 'removed'] == 2 and summary.loc['p', 'removed'] == 1
 
+def _chunker_profile():
+    import yaml
+    cfg = yaml.safe_load(Path('configs/chunking.yaml').read_text(encoding='utf-8'))
+    return yaml.safe_load(Path(cfg['encoders_config']).read_text(encoding='utf-8'))['profiles'][cfg['encoder_profile']]
+
 def _encoder_available():
     try:
         import nltk
         from huggingface_hub import try_to_load_from_cache
-        from app.embeddings import settings
         nltk.data.find('tokenizers/punkt_tab')
-        return isinstance(try_to_load_from_cache(settings()['model'], 'config.json'), str)
+        profile = _chunker_profile()
+        return isinstance(try_to_load_from_cache(profile['model'], 'config.json', revision=profile['revision']), str)
     except Exception:
         return False
 
@@ -147,9 +145,10 @@ def test_real_tokenizer_and_punkt_respect_encoder_limit(strategy):
     from app.embeddings import count_tokens, max_tokens, token_offsets
     cfg = yaml.safe_load(Path('configs/chunking.yaml').read_text(encoding='utf-8'))
     text = Path(cfg['example_text']).read_text(encoding='utf-8')
-    chunks, _ = chunking.chunk_document(text, token_offsets([text])[0], strategy, cfg['strategies'][strategy],
+    profile = _chunker_profile()
+    chunks, _ = chunking.chunk_document(text, token_offsets([text], profile)[0], strategy, cfg['strategies'][strategy],
                                         chunking.punkt_splitter('spanish'))
     pieces = [text[c['char_start']:c['char_end']] for c in chunks]
-    assert len(chunks) > 1 and max(count_tokens(pieces)) <= max_tokens()
+    assert len(chunks) > 1 and max(count_tokens(pieces, 'passage', profile)) <= max_tokens(profile)
     assert all(c['content_tokens'] <= cfg['strategies'][strategy]['chunk_tokens'] for c in chunks)
     if strategy == 'B': assert not any(c['mid_sentence'] for c in chunks)

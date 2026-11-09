@@ -1,36 +1,21 @@
-"""Referencia inicial, no sustituto del diseño y la experimentación estudiantil."""
+"""Recuperación en Milvus para la API. Las colecciones las crea y carga `scripts.ingest` (pipeline)."""
 import os
-from pymilvus import MilvusClient, DataType
+from pymilvus import MilvusClient
 from app.embeddings import embed
 
-COLLECTION = os.getenv('MILVUS_COLLECTION', 'rag_e5small_char1000_v1')
+COLLECTION = os.getenv('MILVUS_COLLECTION', 'rag_granite97m_sent256_s10k_v1')
+SEARCH_EF = int(os.getenv('MILVUS_SEARCH_EF', '64'))
+OUTPUT_FIELDS = ['document_id', 'chunk_index', 'char_start', 'char_end', 'text', 'title', 'url', 'collection_name',
+                 'source', 'language', 'created_at', 'provenance_ids']
 
 def client():
-    return MilvusClient(uri=os.getenv('MILVUS_URI','http://milvus:19530'))
-
-def ensure_collection(c):
-    if c.has_collection(COLLECTION):
-        return
-    dim = len(embed(['ejemplo'])[0])
-    schema = MilvusClient.create_schema(auto_id=False, enable_dynamic_field=False)
-    schema.add_field('chunk_id', DataType.VARCHAR, is_primary=True, max_length=128)
-    schema.add_field('vector', DataType.FLOAT_VECTOR, dim=dim)
-    schema.add_field('text', DataType.VARCHAR, max_length=12000)
-    schema.add_field('document_id', DataType.VARCHAR, max_length=256)
-    schema.add_field('title', DataType.VARCHAR, max_length=2048)
-    schema.add_field('url', DataType.VARCHAR, max_length=4096)
-    schema.add_field('collection_name', DataType.VARCHAR, max_length=80)
-    schema.add_field('source', DataType.VARCHAR, max_length=80)
-    schema.add_field('position', DataType.INT64)
-    index = c.prepare_index_params()
-    index.add_index(field_name='vector', index_type='AUTOINDEX', metric_type='COSINE')
-    c.create_collection(collection_name=COLLECTION, schema=schema, index_params=index)
+    return MilvusClient(uri=os.getenv('MILVUS_URI', 'http://milvus:19530'))
 
 def retrieve(query, k=5):
     c = client()
     if not c.has_collection(COLLECTION):
         return []
-    rows = c.search(collection_name=COLLECTION, data=embed([query], kind='query'), limit=k,
-                    output_fields=['text','document_id','title','url','collection_name','source','position'],
-                    search_params={'metric_type':'COSINE'})[0]
-    return [{'chunk_id': x['chunk_id'], 'score': x['distance'], **x['entity']} for x in rows]
+    rows = c.search(collection_name=COLLECTION, data=embed([query], kind='query'), limit=k, output_fields=OUTPUT_FIELDS,
+                    search_params={'metric_type': 'COSINE', 'params': {'ef': max(SEARCH_EF, k)}})[0]
+    return [{'chunk_id': x['chunk_id'], 'score': x['distance'],
+             **{key: (list(value) if key == 'provenance_ids' else value) for key, value in x['entity'].items()}} for x in rows]

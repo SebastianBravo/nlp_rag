@@ -58,3 +58,19 @@ def measure_cost(texts, embed_fn, warmup=8):
     return {'chunks': len(texts), 'seconds': round(seconds, 2), 'chunks_per_second': round(len(texts) / seconds, 2),
             'dimension': int(np.asarray(vectors).shape[1]),
             'peak_rss_mb': round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)}
+
+def reuse_vectors(chunk_sha256, source_chunks_path, source_vectors_path):
+    """Para cada texto (`chunk_sha256`), el vector ya calculado en otra muestra o None si no existe.
+
+    Con el mismo encoder y revisión, el mismo texto produce el mismo vector: la muestra de 2.000 reutiliza
+    los de la de 10.000, que la contiene.
+    """
+    import pandas as pd
+    source = pd.read_parquet(source_chunks_path, columns=['chunk_id', 'chunk_sha256'])
+    ids, matrix, n_tokens = read_vectors(source_vectors_path)
+    if ids != source['chunk_id'].tolist(): raise ValueError('Los vectores de origen no están alineados con sus chunks.')
+    position = {sha: i for i, sha in enumerate(source['chunk_sha256'])}
+    found = [position.get(sha) for sha in chunk_sha256]
+    vectors = [matrix[i] if i is not None else None for i in found]
+    tokens = [int(n_tokens[i]) if i is not None else None for i in found]
+    return vectors, tokens
