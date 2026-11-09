@@ -3,6 +3,12 @@ services:
   ollama:
     image: ollama/ollama:latest
     ports: ["11434:11434"]
+    environment:
+      # Un solo modelo en memoria: con dos cargados (p. ej. llama3.2:1b y 3b) el proceso del modelo se quedó sin RAM.
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      # Sin caché de prompts en RAM (llama-server guarda hasta 8 GB por defecto, más que la RAM de Docker):
+      # con llama3.2:3b el proceso del modelo se quedó sin memoria tras 6 prompts de unos 3.000 tokens.
+      LLAMA_ARG_CACHE_RAM: "0"
     volumes: [ollama_data:/root/.ollama]
 volumes:
   ollama_data:

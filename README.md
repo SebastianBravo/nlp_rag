@@ -30,8 +30,8 @@ El experimento principal cambia solo el LLM. Todo lo demás queda fijo: corpus, 
 | B. Segmentación | Dos estrategias de chunking con tokens, solapamiento, offsets, IDs estables y deduplicación trazable | Terminada | [`reports/chunking/resumen.md`](reports/chunking/resumen.md) |
 | C. Embeddings | Encoder multilingüe justificado, vecinos semánticos y sensibilidad | Terminada | [`reports/embeddings/resumen.md`](reports/embeddings/resumen.md) |
 | D. Milvus | Colección, campos, índice, filtros, reindexación idempotente, conteos y persistencia | Terminada | [`reports/milvus/resumen.md`](reports/milvus/resumen.md) |
-| E. Orquestación RAG | Recuperar y generar por separado, prompts versionados, presupuesto de contexto, citas y abstención | Pendiente | |
-| F. API e interfaz | Respuesta, tiempos, evidencias y enlaces; errores, estados de carga y modelo elegido en vivo | Parcial: API e interfaz base | `app/` |
+| E. Orquestación RAG | Recuperar y generar por separado, prompts versionados, presupuesto de contexto, citas y abstención | Terminada | [`reports/rag/resumen.md`](reports/rag/resumen.md) |
+| F. API e interfaz | Respuesta, tiempos, evidencias y enlaces; errores, estados de carga y modelo elegido en vivo | Terminada | [`app/`](app/) y [Uso](#uso) |
 | G. Operación | Instrucciones desde cero, modelos, pruebas, persistencia, logs y límites de recursos | Parcial | este README |
 | Gold estándar | 40 preguntas o más: ambas colecciones, varios idiomas y fechas, `dev` y `test` | Borrador con 52 preguntas | [`data/gold/README.md`](data/gold/README.md) |
 | Evaluación | 3 LLM o más, ablaciones y métricas de recuperación, generación, rendimiento y robustez | Pendiente | [`docs/EVALUACION.md`](docs/EVALUACION.md) |
@@ -67,12 +67,13 @@ El encoder se carga desde un único módulo, `app/embeddings.py`, que usan tanto
 - **Encoder:** `ibm-granite/granite-embedding-97m-multilingual-r2` (384 dimensiones, sin prefijos, coseno). La API lo toma de `.env` y el pipeline de `configs/encoders.yaml`, con la misma revisión fijada.
 - **Segmentación:** mide siempre el tamaño de los chunks con el tokenizador de e5-small, para que los chunks no cambien aunque cambie el encoder.
 - **Índice:** HNSW (M = 16, efConstruction = 200, COSINE), con `ef = 64` calibrado frente a la búsqueda exacta. Las colecciones las crea solo la ingesta; la API solo busca.
+- **Orquestación:** recuperar (`app/core.py`) y generar (`app/rag.py`, `app/llm.py`) son pasos separados. El prompt está versionado en `prompts/` y el contexto se ajusta a un presupuesto en tokens, igual para todos los LLM. La respuesta debe citar los documentos y abstenerse si no hay evidencia.
 
 ## Requisitos
 
 - Docker Engine con Compose 2.20 o superior (por `include`).
 - RAM: se recomiendan 16 GB para la pila completa. Depende del LLM elegido. Las cifras de este repositorio se midieron con 10 CPU y 8 GB asignados a Docker.
-- Disco: conviene tener unos 25 GB libres. En macOS con Apple Silicon y `qwen2.5:1.5b` se midieron 17,3 GB de imágenes y 4,3 GB de volúmenes (modelos y Milvus), más la caché de build.
+- Disco: conviene tener unos 30 GB libres. En macOS con Apple Silicon y los cuatro LLM se midieron 17,5 GB de imágenes y 9,3 GB de volúmenes (modelos y Milvus), más la caché de build.
 
 ## Puesta en marcha
 
@@ -108,30 +109,65 @@ Después:
 
 ### Interfaz
 
-1. Abrir http://localhost:8501.
-2. Elegir el LLM. Tiene que estar descargado en Ollama (ver [Modelos LLM](#modelos-llm)).
-3. Ajustar `Top-k`, el número de fragmentos que se recuperan (de 1 a 15).
-4. Escribir la pregunta y pulsar **Consultar**.
+1. Abrir http://localhost:8501. La barra lateral muestra el estado de Milvus y de Ollama.
+2. Elegir el LLM. La lista sale de los modelos descargados en Ollama (ver [Modelos LLM](#modelos-llm)); si no hay ninguno, la interfaz indica cómo descargarlo.
+3. Ajustar `k`, el número de fragmentos que se recuperan (de 1 a 15).
+4. Opcional, en **Opciones avanzadas**: la colección, el idioma, la fuente (prensa o Bluesky), un rango de fechas, la temperatura y la semilla.
+5. Escribir la pregunta y pulsar **Consultar**.
 
-La interfaz muestra la respuesta, el modelo, la latencia total y cada evidencia con su `document_id`, su score, el texto del fragmento y el enlace a la fuente. Las respuestas siempre deben contrastarse con las fuentes.
+La interfaz muestra:
+
+- la respuesta, con un aviso si el modelo se abstuvo, si no citó ningún documento o si citó documentos que no recibió;
+- el tiempo total, el de recuperación y el de generación, los tokens por segundo y cuántos fragmentos entraron al contexto;
+- el modelo, la versión del prompt, la colección, la temperatura y la semilla;
+- cada evidencia con su número `[n]`, título, fuente, fecha, score, offsets, `document_id`, procedencias, enlace y texto. Las citadas aparecen abiertas, y se marcan las que quedaron fuera del contexto por el presupuesto.
+
+Cada error tiene su mensaje: modelo sin descargar (con el comando para descargarlo), colección inexistente, Milvus u Ollama caídos y tiempo agotado. Las respuestas siempre deben contrastarse con las fuentes.
 
 ### API
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/health` | Disponibilidad de la API (no comprueba Milvus ni Ollama) |
-| `POST` | `/retrieve` | Fragmentos recuperados con su score y metadatos |
-| `POST` | `/ask` | Respuesta del LLM, modelo, evidencia y latencia |
+| `GET` | `/health` | Estado de Milvus (colección por defecto y entidades), Ollama y el encoder. Responde 503 si falta alguno |
+| `GET` | `/models` | Modelos descargados en Ollama, con digest, tamaño y cuantización |
+| `GET` | `/collections` | Colecciones `rag_*` de Milvus con su número de entidades |
+| `POST` | `/retrieve` | Fragmentos recuperados con su score, metadatos y tiempos |
+| `POST` | `/ask` | Respuesta, citas, abstención, avisos, evidencias, tokens, tiempos por etapa, prompt y `run_id` |
 
 ```bash
 curl -s localhost:8000/health
+curl -s localhost:8000/models
 curl -s -X POST localhost:8000/retrieve -H 'Content-Type: application/json' \
   -d '{"query": "¿Qué se acordó en la plenaria de la COP16?", "k": 5}'
 curl -s -X POST localhost:8000/ask -H 'Content-Type: application/json' \
-  -d '{"query": "¿Qué se acordó en la plenaria de la COP16?", "model": "qwen2.5:1.5b", "k": 5, "temperature": 0.0}'
+  -d '{"query": "¿Qué se acordó en la plenaria de la COP16?", "model": "qwen2.5:1.5b", "k": 5,
+       "filters": {"language": "es", "desde": "2024-10-01", "hasta": "2024-11-30"}}'
 ```
 
-`query` necesita al menos 3 caracteres, `k` va de 1 a 15 y `temperature` de 0 a 1. `/retrieve` ignora `model` y `temperature`.
+Cuerpo de `/retrieve` y `/ask`:
+
+| Campo | Valores |
+|---|---|
+| `query` | De 3 a 2.000 caracteres |
+| `k` | De 1 a 15 (5 por defecto) |
+| `collection` | Una colección `rag_*`; por defecto, `MILVUS_COLLECTION` |
+| `filters.language` | Código ISO de 2 o 3 letras (idioma declarado o, si falta, detectado) |
+| `filters.collection_name` | `url_crawls` (prensa) o `bluesky_posts` |
+| `filters.desde`, `filters.hasta` | Días `AAAA-MM-DD` en UTC, ambos incluidos |
+| `model` | Solo `/ask`. Un modelo de Ollama; por defecto, `LLM_MODEL` |
+| `temperature`, `seed` | Solo `/ask`. Temperatura de 0 a 1 (0 por defecto) y semilla (por defecto, `LLM_SEED`) |
+
+La respuesta de `/ask` incluye:
+
+- `answer`, `abstained` y `citations` (cada `[n]` citado, con su `chunk_id`, `document_id` y `url`);
+- `invalid_citations` y `warnings`: `sin_citas`, `citas_invalidas`, `citas_en_texto` (citó con palabras, "según el documento n"), `abstencion_parcial`, `solo_citas` (solo números entre corchetes), `contexto_recortado`, `respuesta_cortada`, `posible_truncamiento`, `sin_evidencia` o `filtra_instrucciones`;
+- `context`: fragmentos que entraron, omitidos y tokens estimados;
+- `tokens`: del prompt y de la respuesta, según Ollama, y tokens por segundo;
+- `timings_ms`: consulta, búsqueda, contexto, carga del modelo, lectura del prompt, generación y total;
+- `cold_start`, `prompt` (id, versión y sha256), `options`, `retrieval` y `run_id`;
+- `evidence`, una entrada por fragmento recuperado con `rank`, `in_context` y `cited`.
+
+Cada consulta queda registrada en `data/logs/ask/<fecha>.jsonl` (no se versiona).
 
 Cada fragmento de la evidencia trae:
 
@@ -176,8 +212,13 @@ Las variables se leen de `.env` (plantilla en `.env.example`):
 | `EMBEDDING_QUERY_PREFIX`, `EMBEDDING_PASSAGE_PREFIX` | Prefijos de consulta y pasaje. Vacíos para granite; con E5 serían `"query: "` y `"passage: "`. Van entre comillas para conservar el espacio final |
 | `EMBEDDING_NORMALIZE` | Normalización L2 de los vectores (`true` o `false`) |
 | `OLLAMA_URL` | Dirección de Ollama |
-| `MAX_CONTEXT_CHARS` | Máximo de caracteres de contexto que se envían al LLM |
-| `LLM_MODEL` | Reservada. Hoy el modelo se elige en cada petición (`model`), con `qwen2.5:1.5b` por defecto |
+| `LLM_MODEL` | Modelo por defecto de la API y la interfaz; cada petición puede elegir otro |
+| `LLM_NUM_CTX`, `LLM_NUM_PREDICT` | Ventana de contexto fija para todos los modelos (4096) y máximo de tokens de respuesta (512) |
+| `LLM_TOKEN_FACTOR` | Tokens del LLM por cada token del encoder, calibrado en `reports/rag/`; ajusta el presupuesto de contexto |
+| `LLM_SEED`, `LLM_TIMEOUT` | Semilla por defecto y tiempo máximo de espera de Ollama en segundos |
+| `LLM_NUM_THREAD` | Hilos de Ollama por petición (8 de 10), para dejar CPU libre a etcd y Milvus |
+| `PROMPT_ID` | Prompt versionado de `prompts/<id>.yaml` |
+| `LOG_DIR` | Carpeta del registro JSONL de consultas (`data/logs`) |
 
 Si cambia el encoder, sus prefijos, la normalización o la estrategia de chunking, los vectores dejan de ser comparables. En ese caso hay que usar otra colección y regenerar los embeddings; nunca se mezclan vectores de dos configuraciones en una colección.
 
@@ -199,6 +240,7 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 | `encoder_report` | Analiza el encoder con las preguntas `dev` del gold: variantes de consulta, paráfrasis y traducción, idiomas, dimensión y vecinos de ejemplo. Escribe `reports/embeddings/` |
 | `ingest` | Carga en Milvus una colección de `configs/milvus.yaml` desde los Parquet de chunks y de vectores. Hace `upsert` por lotes (repetirla no duplica), reintenta con espera creciente, retoma desde el último lote si se interrumpe y verifica el conteo. Opciones: `--collection`, `--fresh` (borra la colección y su progreso antes de cargar) |
 | `milvus_report` | Verifica las colecciones: conteos, calibración de `ef` frente a la búsqueda exacta, filtros y métricas en dev. Con `--snapshot` y `--compare` comprueba la persistencia tras reiniciar Milvus. Escribe `reports/milvus/` |
+| `check_rag` | Revisa el RAG solo con las preguntas `dev`. Con `--calibrar` mide en cada LLM los tokens reales del prompt frente a los del encoder y propone `LLM_TOKEN_FACTOR`; sin esa opción responde las preguntas con cada prompt y modelo dados y resume abstención, citas, tokens y latencias. Escribe `reports/rag/`; las respuestas completas van a `data/logs/check_rag/`. Opciones: `--prompts`, `--models`, `--k`, `--calibrar` |
 
 La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
 
@@ -229,27 +271,30 @@ for c in sent256_s2k win256_s2k sent256_s10k win256_s10k sent256_adv; do
   docker compose --profile tools run --rm pipeline python -m scripts.ingest --collection $c
 done
 docker compose --profile tools run --rm pipeline python -m scripts.milvus_report
+# revisión del RAG en dev (necesita los modelos de Ollama, ver Modelos LLM)
+docker compose --profile tools run --rm pipeline python -m scripts.check_rag --calibrar --models qwen2.5:1.5b llama3.2:1b llama3.2:3b gemma2:2b
+docker compose --profile tools run --rm pipeline python -m scripts.check_rag --prompts rag_v1 rag_v2 rag_v3 rag_v4
 ```
 
 Si el entorno reproduce los resultados, `git status` solo muestra cambios en fechas, duraciones y tiempos:
 
 - `reports/eda/profile.json`;
 - `data/samples/*_meta.json`;
-- `reports/chunking/runs/*.json`, `reports/embeddings/runs/*.json`, `reports/milvus/runs/*.json` y `reports/milvus/verificacion.json`;
+- `reports/chunking/runs/*.json`, `reports/embeddings/runs/*.json`, `reports/milvus/runs/*.json`, `reports/rag/runs/*.json` y `reports/milvus/verificacion.json`;
 - las columnas de tiempo de `reports/chunking/tables/comparacion_*.csv`;
-- las latencias de `reports/milvus/tables/calibracion_ef.csv` y su figura.
+- las latencias de `reports/milvus/tables/calibracion_ef.csv` y su figura, y las de `reports/rag/tables/dev_*.csv`.
 
-Las demás tablas, las figuras y las listas de IDs salen idénticas. El grafo HNSW puede construirse algo distinto en otra máquina, así que el Recall@10 de la calibración puede variar en milésimas.
+Las demás tablas, las figuras y las listas de IDs salen idénticas. El grafo HNSW puede construirse algo distinto en otra máquina, así que el Recall@10 de la calibración puede variar en milésimas. Las respuestas de los LLM usan semilla y temperatura 0, pero pueden cambiar entre versiones de Ollama o entre máquinas.
 
 ## Modelos LLM
 
 ```bash
-docker compose exec ollama ollama pull llama3.2:1b   # también llama3.2:3b, gemma2:2b
+docker compose exec ollama ollama pull qwen2.5:1.5b   # también llama3.2:1b, llama3.2:3b y gemma2:2b
 docker compose exec ollama ollama list
 docker compose exec ollama ollama rm <modelo>
 ```
 
-El selector de la interfaz ofrece `qwen2.5:1.5b`, `llama3.2:1b`, `llama3.2:3b` y `gemma2:2b`. Si se pide un modelo que no se ha descargado, la API responde 503 con el 404 de Ollama en el detalle.
+Los cuatro modelos del experimento ocupan unos 5,9 GB. El selector de la interfaz muestra los modelos descargados (`GET /models`). Si se pide un modelo que no está descargado, la API responde 404 con el comando para descargarlo.
 
 ## Datos
 
@@ -279,7 +324,9 @@ Está en borrador: falta el pooling con las colecciones de Milvus, el acuerdo en
 ## Estructura
 
 ```
-app/            servicios en línea: api.py, frontend.py, core.py (búsqueda en Milvus), embeddings.py (encoder)
+app/            servicios en línea: api.py, frontend.py, core.py (Milvus), rag.py (contexto, citas, registro),
+                llm.py (Ollama), filters.py, embeddings.py (encoder)
+prompts/        prompts versionados (rag_v1.yaml, el de la API, y las variantes rag_v2 a rag_v4 probadas en dev)
 pipeline/       lógica batch reutilizable y testeable
 scripts/        CLI que se ejecutan en el contenedor pipeline (python -m scripts.<tarea>)
 configs/        parámetros YAML de las etapas (eda.yaml, chunking.yaml, encoders.yaml, milvus.yaml)
@@ -288,7 +335,7 @@ docker/         compose por conjunto de servicios y un Dockerfile por servicio
 requirements/   dependencias por imagen (api, frontend, pipeline, torch-cpu) y dev.txt para local
 tests/          pruebas con pytest
 data/           corpus y derivados (no se versiona, salvo samples/ y gold/)
-reports/        resultados agregados (eda/, chunking/, embeddings/, milvus/)
+reports/        resultados agregados (eda/, chunking/, embeddings/, milvus/, rag/)
 docs/           protocolo de evaluación (EVALUACION.md) y registro de decisiones (decisiones.md)
 ```
 
@@ -305,15 +352,16 @@ python -m nltk.downloader punkt_tab   # separador de oraciones de la segmentaci�
 pytest -q
 ```
 
-Algunas pruebas se omiten si falta lo que necesitan: las del tokenizador real, si el encoder no está en caché, y la de integración, si Milvus no está en marcha. El entorno local sirve para explorar. Toda cifra que se reporte sale de lo que corre en Docker.
+Algunas pruebas se omiten si falta lo que necesitan: las del tokenizador real, si el encoder no está en caché; la de integración con Milvus, si no está en marcha; y la de punta a punta con el LLM, si falta `qwen2.5:1.5b` en Ollama (se puede saltar con `RUN_LLM_TESTS=0`). El entorno local sirve para explorar. Toda cifra que se reporte sale de lo que corre en Docker.
 
 ## Limitaciones actuales
 
-- La API busca por chunks con un `ef` fijo y todavía no aplica filtros (idioma, colección, fechas) ni agrupa por documento. Los campos ya existen en Milvus; usarlos es parte de las fases E y F.
-- El prompt está en el código, sin versión, y el contexto que se envía al LLM se recorta por caracteres, no por tokens.
-- La lista de modelos de la interfaz es fija; no se lee de Ollama.
+- El contexto se arma con los fragmentos en orden de rank; agruparlos por documento queda como ablación de la evaluación.
+- El presupuesto de tokens se mide con el tokenizador del encoder y un factor calibrado, porque Ollama no expone el conteo antes de generar. La API compara después con el conteo real y avisa si se pasó.
+- La abstención depende de que el modelo use la frase fija del prompt. Una abstención con otras palabras no se detecta.
+- El prompt por defecto (`rag_v1`) prioriza abstenerse bien: en `dev`, con `qwen2.5:1.5b`, el 45 % de sus respuestas no cita documentos. `rag_v4` cita más, pero se abstiene peor (ver [`reports/rag/resumen.md`](reports/rag/resumen.md)).
+- Todo corre en CPU: con `qwen2.5:1.5b` y `k = 5` una respuesta tarda 7,8 s de mediana, y la primera tras cambiar de modelo suma unos 6,6 s de carga. Los modelos más grandes son más lentos.
 - Se indexaron las muestras de 2.000 y 10.000 documentos. Vectorizar el corpus completo en CPU tomaría unas 10 horas.
-- `/health` no comprueba las dependencias.
 - La imagen de Ollama usa la etiqueta `latest`. Las demás imágenes de terceros tienen versión fija, pero aún sin digest.
 
 ## Uso responsable
@@ -340,8 +388,13 @@ Las muestras se obtienen con muestreo estratificado y semilla fija. Las tareas d
 
 | Síntoma | Causa y solución |
 |---|---|
-| `/ask` responde 503 con `404 Client Error ... /api/generate` | El modelo no está descargado en Ollama: `docker compose exec ollama ollama pull <modelo>` |
-| `evidence` llega vacío | La colección de `MILVUS_COLLECTION` no existe o está vacía. Hay que cargarla (`scripts.ingest --collection sent256_s10k`) o revisar el nombre en `.env` |
+| `/ask` responde 404 con "no está descargado en Ollama" | Descargar el modelo con el comando que trae el mensaje: `docker compose exec ollama ollama pull <modelo>` |
+| `/ask` responde 404 con "La colección … no existe" | La colección no está cargada. Hay que cargarla (`scripts.ingest --collection sent256_s10k`) o revisar `MILVUS_COLLECTION` en `.env` |
+| `/ask` responde 504 | El modelo tardó más de `LLM_TIMEOUT` segundos. Probar con menos fragmentos (`k`) o un modelo más pequeño |
+| `/health` responde 503 | Milvus u Ollama no responden, o la colección por defecto está vacía; el cuerpo dice cuál |
+| Milvus se reinicia mientras Ollama genera | Con la CPU saturada, etcd se atrasa y Milvus pierde su sesión; se levanta solo (`restart: unless-stopped`). `LLM_NUM_THREAD` deja núcleos libres; si pasa seguido, bajarlo |
+| `/ask` responde 503 con "model runner has unexpectedly stopped" | El modelo no cupo en la RAM de Docker. `docker/ollama.yml` ya deja un solo modelo cargado y desactiva la caché de prompts en RAM (`LLAMA_ARG_CACHE_RAM=0`); si aun así falla, cerrar otros procesos o usar un modelo más pequeño |
+| La respuesta trae el aviso `sin_evidencia` | Los filtros no dejaron ningún fragmento. Ampliar el rango de fechas o quitar el filtro de idioma |
 | `ingest` falla porque no encuentra `data/embeddings/...` | Falta vectorizar esa estrategia y muestra con `embed_chunks`. Para el piloto basta `--reuse sample_10000` |
 | `ingest` dice que los vectores no están alineados con los chunks | Los chunks se regeneraron después de vectorizar. Hay que repetir `embed_chunks` para esa estrategia y muestra |
 | El build falla con `No space left on device` | Falta espacio en la VM de Docker. Liberar la caché con `docker builder prune` |
@@ -351,7 +404,7 @@ Las muestras se obtienen con muestreo estratificado y semilla fija. Las tareas d
 ## Flujo de trabajo
 
 - **`main`:** siempre funciona. Solo entra lo que construye, levanta y pasa las pruebas.
-- **Ramas:** una rama corta por etapa (`feature/fase-0-fundaciones`, `feature/fase-a-perfilado`, …, `feature/fase-d-milvus`). El gold estándar avanza en paralelo en `feature/gold-estandar`.
+- **Ramas:** una rama corta por etapa (`feature/fase-0-fundaciones`, `feature/fase-a-perfilado`, …, `feature/fase-d-milvus`, `feature/fase-e-f-orquestacion`). El gold estándar avanza en paralelo en `feature/gold-estandar`.
 - **Experimentos:** no van en ramas. Se parametrizan en `configs/` y sus resultados agregados van a `reports/`.
 - **Integración:** cada rama entra por PR con merge commit (`--no-ff`). Cada hito lleva un tag (`fase-0`, `fase-a`, …, `entrega-final`).
 - **Commits:** en formato Conventional Commits con descripción en español (`feat: …`, `fix: …`, `docs: …`, `test: …`).
