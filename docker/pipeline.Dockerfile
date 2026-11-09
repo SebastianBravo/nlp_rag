@@ -6,6 +6,7 @@ RUN pip install --no-cache-dir -r requirements/torch-cpu.txt && pip install --no
 RUN python -m nltk.downloader -d /usr/local/share/nltk_data punkt_tab
 COPY pytest.ini .
 COPY app/ app/
+COPY prompts/ prompts/
 COPY pipeline/ pipeline/
 COPY scripts/ scripts/
 COPY configs/ configs/

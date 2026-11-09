@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from pymilvus import DataType, MilvusClient
+from app.filters import window_bounds, window_filter  # una sola implementación para la API y el pipeline
 from pipeline.profiling import DATE_ONLY, parse_dates
 
 OUTPUT_FIELDS = ['document_id', 'chunk_index', 'char_start', 'char_end', 'text', 'title', 'url', 'collection_name',
@@ -123,17 +124,6 @@ def search(client, collection, vectors, k, ef, filter_expr='', output_fields=Non
                            limit=k, filter=filter_expr, output_fields=output_fields or [],
                            search_params={'metric_type': 'COSINE', 'params': {'ef': max(ef, k)}})
     return [[(h['chunk_id'], float(h['distance']), dict(h['entity'])) for h in hits] for hits in result]
-
-def window_bounds(window):
-    """(inicio, fin) en segundos UTC de una ventana {desde, hasta}; el fin es exclusivo (día siguiente a `hasta`)."""
-    start = int(pd.Timestamp(window['desde'], tz='UTC').timestamp())
-    end = int((pd.Timestamp(window['hasta'], tz='UTC') + pd.DateOffset(days=1)).timestamp())
-    return start, end
-
-def window_filter(window):
-    """Expresión de Milvus para una ventana {desde, hasta} sobre `created_at` (ambos días incluidos)."""
-    start, end = window_bounds(window)
-    return f'created_at >= {start} and created_at < {end}'
 
 def ingest(client, name, chunks, vectors, cfg, checkpoint_path, inputs_key, fresh=False, log=print):
     """Crea (si falta) y carga una colección; verifica que el conteo coincida con los chunks."""
