@@ -240,6 +240,9 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 | `encoder_report` | Analiza el encoder con las preguntas `dev` del gold: variantes de consulta, paráfrasis y traducción, idiomas, dimensión y vecinos de ejemplo. Escribe `reports/embeddings/` |
 | `ingest` | Carga en Milvus una colección de `configs/milvus.yaml` desde los Parquet de chunks y de vectores. Hace `upsert` por lotes (repetirla no duplica), reintenta con espera creciente, retoma desde el último lote si se interrumpe y verifica el conteo. Opciones: `--collection`, `--fresh` (borra la colección y su progreso antes de cargar) |
 | `milvus_report` | Verifica las colecciones: conteos, calibración de `ef` frente a la búsqueda exacta, filtros y métricas en dev. Con `--snapshot` y `--compare` comprueba la persistencia tras reiniciar Milvus. Escribe `reports/milvus/` |
+| `pool_gold` | Pooling del gold: consulta las colecciones A y B de Milvus con cada pregunta, une los primeros 20 documentos de cada una y escribe `data/gold/pooling.jsonl` (solo ids y rangos), la cobertura de los relevantes ya anotados y las hojas de anotación `.xlsx` (locales, con texto del corpus; en `data/annotation/`). Con `--fase2`, la hoja de validación de las respuestas de referencia |
+| `apply_annotations` | Lee las hojas llenas, escribe `data/gold/anotacion_1.jsonl` y `anotacion_2.jsonl` (ids y grados), calcula el acuerdo entre anotadores en `reports/gold/` y prepara `desacuerdos.xlsx` |
+| `freeze_gold` | Aplica los grados finales al gold y lo congela (`estado = congelado`). Sin `--write` es un ensayo; bloquea si queda pooling pendiente, desacuerdos sin resolver o una pregunta sin respuesta con documentos relevantes |
 | `check_rag` | Revisa el RAG solo con las preguntas `dev`. Con `--calibrar` mide en cada LLM los tokens reales del prompt frente a los del encoder y propone `LLM_TOKEN_FACTOR`; sin esa opción responde las preguntas con cada prompt y modelo dados y resume abstención, citas, tokens y latencias. Escribe `reports/rag/`; las respuestas completas van a `data/logs/check_rag/`. Opciones: `--prompts`, `--models`, `--k`, `--calibrar` |
 
 La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
@@ -319,7 +322,7 @@ El perfilado completo (integridad, idioma, fechas, duplicados, ruido, sesgos) y 
 - **Documentos de evidencia:** los 53 están en la muestra de 10.000.
 - **Uso:** `dev` sirve para ajustar y `test` solo para reportar.
 
-Está en borrador: falta el pooling con las colecciones de Milvus, el acuerdo entre anotadores y congelar `test`. El esquema y las métricas están en [`data/gold/README.md`](data/gold/README.md).
+Está en borrador: falta ejecutar el pooling con las colecciones de Milvus (`pool_gold`), registrar la segunda anotación y su acuerdo (`apply_annotations`) y congelarlo (`freeze_gold`, tag `gold-v1`). El esquema, las métricas y el procedimiento están en [`data/gold/README.md`](data/gold/README.md).
 
 ## Estructura
 

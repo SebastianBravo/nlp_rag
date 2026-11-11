@@ -11,6 +11,8 @@ Conjunto de 52 preguntas con evidencia anotada para evaluar el pipeline RAG del 
 | `gold.jsonl` | Una pregunta por línea (52). |
 | `parafrasis_dev.jsonl` | Una paráfrasis y una traducción al otro idioma de cada pregunta respondible de `dev` (15), para las pruebas de sensibilidad del encoder. Autor y revisión: Javier; segunda validación: Sebastián. |
 | `synthetic/synthetic_docs.jsonl` | 4 documentos sintéticos (SYN-01 a SYN-04) para Q45–Q48 (inyección de prompt). |
+| `pooling.jsonl` | Lo genera `scripts.pool_gold`: por pregunta, los documentos candidatos de las colecciones A y B con su rank en cada una. Solo ids y rangos. |
+| `anotacion_1.jsonl`, `anotacion_2.jsonl` | Los genera `scripts.apply_annotations`: grado por (pregunta, documento) de cada anotador, y del segundo anotador, la validez de las respuestas de referencia. Solo ids, grados y etiquetas. |
 
 El corpus (parquet) no se versiona. Este directorio solo tiene preguntas, claves de documento, offsets y respuestas de referencia; no contiene texto del corpus.
 
@@ -87,10 +89,18 @@ El LLM-judge (un modelo local distinto de los evaluados) solo complementa la rev
 
 | Pendiente | Qué hay que hacer | Estado |
 |---|---|---|
-| Pooling | Para cada pregunta, consultar las colecciones de Milvus de ambas estrategias de chunking (A y B, top-20 de cada una), unir los resultados a nivel documento y asignar el `grado` a cada documento. Confirmar las ausencias de las `sin_respuesta` contra la colección completa y completar los `relevantes` de las ambiguas. Guardar solo ids y ranks, sin texto del corpus. | Depende de la indexación en Milvus |
+| Pooling | Para cada pregunta, consultar las colecciones de Milvus de ambas estrategias de chunking (A y B, top-20 de cada una), unir los resultados a nivel documento y asignar el `grado` a cada documento. Confirmar las ausencias de las `sin_respuesta` y completar los `relevantes` de las ambiguas. Se hace con `scripts.pool_gold` (ids y rangos en `pooling.jsonl`; las hojas de anotación con texto son locales). | Herramienta lista; falta ejecutarla y revisar los candidatos |
 | Revisión de Q49–Q52 | Se agregaron para cubrir preguntas en inglés y con ventana de fechas. Sebastián confirmó la pregunta, los intervalos, el `grado` y la respuesta de referencia. | Hecha |
 | Segunda anotación | Un segundo anotador revisa de forma independiente al menos 16 preguntas, rellena `anotador_2` y se calcula el acuerdo entre anotadores. Sebastián es el segundo anotador de las 30 preguntas de `test` de Q01–Q48. Q50 y Q52 quedan fuera porque él ya figura como `anotador_1`. Para calcular el acuerdo falta registrar sus juicios (grado por documento y validez de la respuesta de referencia). | Anotación asignada; acuerdo pendiente |
-| Congelamiento | Cuando el pooling y la segunda anotación estén cerrados: `estado` pasa a `congelado`, se hace commit, se crea el tag `gold-v1` y se registra el hash en el informe. | Pendiente |
+| Congelamiento | Cuando el pooling y la segunda anotación estén cerrados: `scripts.freeze_gold` (primero en ensayo, luego con `--write`) pasa `estado` a `congelado`; después commit, tag `gold-v1` y el hash en el informe. | Pendiente |
+
+### Procedimiento de pooling y segunda anotación
+
+1. `pool_gold` genera `pooling.jsonl` y dos hojas locales en `data/annotation/`: `hoja_anotador1.xlsx` (preguntas con pooling pendiente y las de la submuestra de doble anotación) y `hoja_anotador2.xlsx` (la submuestra, top-10 de cada colección). Los candidatos van en orden aleatorio estable (semilla 42), con el pasaje recuperado entre `>>>` y `<<<`.
+2. El anotador 1 asigna `grado` (0, 1 o 2) a cada candidato; los juicios previos vienen precargados. El segundo anotador recibe una hoja **ciega**: sin rangos, sin grados previos y sin respuestas de referencia, y escribe su propia respuesta en la hoja `respuestas` («NO CONSTA» si ningún documento responde).
+3. Cuando el segundo anotador entrega, `pool_gold --fase2` genera la hoja con las respuestas de referencia para marcarlas como válidas, parciales o inválidas.
+4. `apply_annotations` calcula el acuerdo (kappa ponderado cuadrático sobre 0/1/2, kappa binario con grado ≥ 1 y porcentaje de acuerdo exacto) y deja `desacuerdos.xlsx`. En las preguntas sin respuesta el kappa no está definido si todos los grados son 0; se reporta el acuerdo exacto.
+5. Los dos anotadores discuten cada desacuerdo y llenan `grado_final`. `freeze_gold` aplica los grados finales: los documentos nuevos entran como documento completo (sin offsets, así que no cuentan para el acierto de evidencia).
 
 Hasta que exista `gold-v1`, los resultados se consideran preliminares. Los campos `pooling_pendiente: true` indican qué preguntas todavía pueden cambiar.
 
