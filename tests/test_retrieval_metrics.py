@@ -70,3 +70,11 @@ def test_embed_in_parts_resumes_and_keeps_order(tmp_path):
     read_ids, matrix, n_tokens = embedding.read_vectors(out)
     assert read_ids == ids and matrix.dtype == np.float32 and matrix[:, 0].tolist() == [1, 2, 3, 4, 5]
     assert not parts.exists() and n_tokens.tolist() == [1] * 5
+
+def test_strict_variant_uses_only_grade_two():
+    q = question([{'document_id': 'a', 'grado': 2}, {'document_id': 'b', 'grado': 1}])
+    row = metrics.question_metrics(['x', 'b', 'y', 'a'], q, ks=(2, 4))
+    assert row['recall@2_g2'] == 0 and row['recall@4_g2'] == 1 and row['hit@2_g2'] == 0 and row['mrr_g2'] == 0.25
+    only1 = question([{'document_id': 'b', 'grado': 1}])
+    row = metrics.question_metrics(['b'], only1, ks=(1,))
+    assert row['hit@1'] == 1 and math.isnan(row['recall@1_g2']) and math.isnan(row['hit@1_g2']) and math.isnan(row['mrr_g2'])
