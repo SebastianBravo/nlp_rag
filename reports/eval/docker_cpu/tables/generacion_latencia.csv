@@ -1,0 +1,5 @@
+condition,model,arranque,n,total_ms_p50,total_ms_p95,llm_generation_ms_p50,llm_generation_ms_p95,tokens_per_s_p50,tokens_per_s_p95,model_vram_mb,cpu_pct_mean,celdas,errores,tasa_errores
+principal,llama3.2:3b,caliente,31,8442.6,13071.7,978.6,4109.15,55.08,62.885,0,61.44516129032258,32,0,0.0
+principal,llama3.2:3b,frio,1,11974.599999999999,11974.599999999999,588.8,588.8,56.05,56.05,0,48.7,32,0,0.0
+principal,qwen2.5:1.5b,caliente,31,4032.2,6411.4,406.8,2127.35,114.74,137.20999999999998,0,59.33548387096774,32,0,0.0
+principal,qwen2.5:1.5b,frio,1,6665.0,6665.0,492.3,492.3,105.63,105.63,0,61.4,32,0,0.0
