@@ -1,0 +1,29 @@
+# Experimentos de la Fase H. Cada condición hereda de `base` y cambia UNA sola dimensión.
+# El contexto recuperado es el mismo para todos los modelos de una condición (se recupera una vez por pregunta).
+gold: data/gold/gold.jsonl
+out_dir: data/logs/eval          # respuestas completas (pueden citar el corpus): no se versionan
+reports_dir: reports/eval        # solo ids, métricas y entorno: se versiona
+splits: [test, dev]              # test es el resultado principal; dev es complementario (con dev se eligió el prompt)
+runs: 3                          # con temperatura 0 y semilla fija las corridas miden la variabilidad de los tiempos
+seed: 42
+models: [qwen2.5:1.5b, llama3.2:1b, llama3.2:3b, gemma2:2b]
+
+base:
+  collection: rag_granite97m_sent256_s10k_v1   # estrategia B (por estructura)
+  k: 5
+  prompt: rag_v1
+  count: null                                  # null: entran al contexto los fragmentos que caben en el presupuesto
+
+conditions:
+  principal: {}                                # experimento principal: solo cambia el LLM
+  k3: {k: 3}
+  k10: {k: 10}
+  chunking_A: {collection: rag_granite97m_win256_s10k_v1}   # ventana deslizante; Q45-Q48 siguen en la colección adversarial (B)
+  prompt_v4: {prompt: rag_v4}
+  contexto_top3: {count: 3}                    # se recuperan 5, pero solo los 3 mejores entran al contexto
+
+retrieval:                                     # evaluación de recuperación sin LLM
+  k: 20
+  collections:
+    B: rag_granite97m_sent256_s10k_v1
+    A: rag_granite97m_win256_s10k_v1
