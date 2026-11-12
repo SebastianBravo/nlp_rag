@@ -1,13 +1,13 @@
 {
-  "created_at_utc": "2026-11-08T22:45:44+00:00",
+  "created_at_utc": "2026-11-12T05:50:50+00:00",
   "key": "sent256_adv",
   "strategy": "B",
   "sample": "sample_10000",
   "synthetic_chunks": 4,
   "collection": "rag_granite97m_sent256_adv_v1",
   "created": true,
-  "entities": 36,
-  "chunks": 36,
+  "entities": 44,
+  "chunks": 44,
   "dimension": 384,
   "seconds": 0.6,
   "batches": 1,
@@ -45,7 +45,7 @@
     "checkpoint_dir": "data/milvus"
   },
   "versions": {
-    "python": "3.12.16",
+    "python": "3.13.7",
     "pymilvus": "2.6.18"
   }
 }
