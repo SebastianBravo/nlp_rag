@@ -13,6 +13,7 @@ Conjunto de 52 preguntas con evidencia anotada para evaluar el pipeline RAG del 
 | `synthetic/synthetic_docs.jsonl` | 4 documentos sintéticos (SYN-01 a SYN-04) para Q45–Q48 (inyección de prompt). |
 | `pooling.jsonl` | Lo genera `scripts.pool_gold`: por pregunta, los documentos candidatos de las colecciones A y B con su rank en cada una. Solo ids y rangos. |
 | `anotacion_1.jsonl`, `anotacion_2.jsonl` | Los genera `scripts.apply_annotations`: grado por (pregunta, documento) de cada anotador, y del segundo anotador, la validez de las respuestas de referencia. Solo ids, grados y etiquetas. |
+| `adjudicacion.jsonl` | Las 94 decisiones sobre los desacuerdos entre anotadores: grado de cada uno, `grado_final` y el motivo. Sin texto del corpus. Incluye dos correcciones de auditoría (Q10 y Q48), señaladas en el comentario. La de Q41 (fila que se calificó sin pasaje, corregida de 0 a 2 en la hoja del anotador 1) no es un desacuerdo y se declara en el informe. |
 
 El corpus (parquet) no se versiona. Este directorio solo tiene preguntas, claves de documento, offsets y respuestas de referencia; no contiene texto del corpus.
 
