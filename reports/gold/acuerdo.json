@@ -1,0 +1,24 @@
+{
+  "pairs": 206,
+  "questions": 16,
+  "exact_agreement": 0.5436893203883495,
+  "kappa_weighted_quadratic": 0.6045204449194475,
+  "kappa_weighted_linear": 0.4556025369978858,
+  "kappa_binary": 0.307307471500041,
+  "questions_sheet1": 29,
+  "questions_sheet2": 16,
+  "blank_sheet1": [],
+  "blank_sheet2": [],
+  "partial_sheet1": [],
+  "partial_sheet2": [],
+  "disagreements": 94,
+  "validity": {
+    "válida": 0,
+    "parcial": 0,
+    "inválida": 0
+  },
+  "abstention_questions_in_sample": [
+    "Q16",
+    "Q44"
+  ]
+}

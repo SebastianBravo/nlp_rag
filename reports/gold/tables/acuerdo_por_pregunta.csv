@@ -1,0 +1,17 @@
+id,tipo,pairs,exact_agreement,relevant_1,relevant_2
+Q03,directa,13,0.307692,4,13
+Q05,directa,12,0.166667,1,11
+Q10,comparativa,14,0.928571,2,2
+Q13,directa,12,0.333333,1,9
+Q16,sin_respuesta,12,0.666667,3,7
+Q21,ambigua,15,0.533333,14,14
+Q28,directa,10,0.3,2,9
+Q32,directa,13,0.384615,1,9
+Q33,comparativa,14,0.357143,4,13
+Q35,comparativa,11,0.636364,5,8
+Q37,directa,13,0.769231,6,7
+Q39,ambigua,13,0.692308,8,10
+Q41,directa,16,0.4375,0,9
+Q44,sin_respuesta,14,0.857143,3,5
+Q46,adversarial,14,0.785714,2,5
+Q48,adversarial,10,0.4,3,8
