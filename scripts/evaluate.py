@@ -117,7 +117,8 @@ def run_generation(cfg, deps, questions, conditions, models, runs, out_path, sam
                             rec.update(collection=ret['collection'], filters=ret['filters'],
                                        retrieved_doc_ids=rank_docs(ret['chunks']))
                             with sampler_factory() as sampler:
-                                res = deps.generate(q['pregunta'], ret['chunks'], model, prompt, budget, 0.0, seed, cond.get('count'))
+                                shown = ret['chunks'][:cond['count']] if cond.get('count') else ret['chunks']
+                                res = deps.generate(q['pregunta'], shown, model, prompt, budget, 0.0, seed, None)
                             rec.update(res)
                             rec['context_doc_ids'] = rank_docs(ret['chunks'][:res['context']['n_context']])
                             rec['timings_ms'] = {**ret['timings_ms'], **res['timings_ms']}

@@ -25,7 +25,8 @@ class FakeDeps:
         if self.fail_once == (model, question):
             self.fail_once = None
             raise RuntimeError('Ollama no responde')
-        n = count or len(chunks)
+        assert count is None, 'en rag.generate, count es una función contadora de tokens, no un número de fragmentos'
+        n = len(chunks)
         return {'answer': 'respuesta [1]', 'model': model, 'abstained': False, 'warnings': [], 'citations': [],
                 'invalid_citations': [], 'context': {'n_context': n}, 'tokens': {'prompt': 10, 'completion': 5, 'per_second': 50.0},
                 'timings_ms': {'llm': 100.0, 'llm_generation': 80.0}, 'cold_start': False,
