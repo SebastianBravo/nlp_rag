@@ -50,9 +50,15 @@ Redactadas a partir del diseño durante la elaboración del informe. No se regis
 | 3 | Cumplido | Contexto idéntico entre LLM por caché; una dimensión por ablación |
 | 4 | Parcial | Recuperación completa; en generación, rúbrica por jueces LLM más auditoría humana de n = 12 en lugar de rúbrica humana completa; RAM/CPU/GPU registrados |
 | 5 | Cumplido | 3 corridas, frío y caliente, intervalos bootstrap; sin afirmaciones de significancia sin intervalo |
-| 6 | Parcial | Inyección evaluada solo en Q45–Q48 (3 en test); fecha en Q07; duplicados y fechas como parte del corpus; sesgo por plataforma (Bluesky frente a prensa) no desglosado |
+| 6 | Parcial | Inyección evaluada solo en Q45–Q48 (3 en test); fecha en Q07; duplicados y fechas como parte del corpus; desglose por plataforma en `plataforma_*.csv` (ver abajo), con n muy pequeño y confundido con el tipo de pregunta |
 | 7 | Cumplido | Tablas de recuperación y de generación separadas; JSONL con configuración, prompt versionado, tiempos y calificaciones. El JSONL con respuestas completas contiene texto del corpus y no se versiona |
 | 8 | En el informe | Conclusiones con intervalos y amenazas a la validez declaradas |
+
+## Desglose por plataforma
+
+`python -m scripts.analyze_plataforma` agrupa las preguntas por `colecciones` del gold (prensa, Bluesky, mixta y sintética con prensa) y calcula las métricas de recuperación, generación y jueces con el mismo bootstrap. En test hay 15 a 19 preguntas de solo prensa, 6 de solo Bluesky, 4 mixtas y 3 sintéticas (las de inyección).
+
+No hay una diferencia detectable entre Bluesky y prensa: la corrección media según los jueces es 1,02 (IC 0,46 a 1,56) en Bluesky y 1,05 (IC 0,72 a 1,35) en prensa. El recall@5 de B es más alto en Bluesky (0,88) que en prensa (0,66), pero las 6 preguntas de solo Bluesky en test son todas directas, mientras que prensa incluye comparativas y sin respuesta; plataforma y tipo de pregunta no se pueden separar. El grupo mixto es el más débil (recall@5 de B 0,26; corrección 0,38), pero sus 4 preguntas son 2 ambiguas, 1 comparativa y 1 directa, así que tampoco se puede atribuir a la plataforma. Con estos tamaños la lectura es descriptiva.
 
 ## Amenazas a la validez
 
