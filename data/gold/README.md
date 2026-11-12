@@ -20,10 +20,10 @@ El corpus (parquet) no se versiona. Este directorio solo tiene preguntas, claves
 
 | Tipo | Preguntas | Qué evalúa |
 |---|---|---|
-| `directa` (22) | Q01–Q05, Q12–Q14, Q17–Q19, Q24, Q27–Q29, Q31, Q32, Q41, Q49–Q52 | Recuperar y responder un dato concreto (Q51 y Q52, dentro de una ventana de fechas) |
+| `directa` (23) | Q01–Q05, Q12–Q14, Q17–Q19, Q24, Q27–Q29, Q31, Q32, Q37, Q41, Q49–Q52 | Recuperar y responder un dato concreto (Q51 y Q52, dentro de una ventana de fechas) |
 | `comparativa` (10) | Q09–Q11, Q20, Q25, Q26, Q33–Q36 | Combinar varios documentos, atribuir cada cifra, detectar discrepancias |
 | `ambigua` (6) | Q15, Q21, Q22, Q39, Q40, Q42 | Pedir aclaración o cubrir todas las lecturas |
-| `sin_respuesta` (8) | Q08, Q16, Q23, Q30, Q37, Q38, Q43, Q44 | Abstenerse cuando el dato no consta |
+| `sin_respuesta` (7) | Q08, Q16, Q23, Q30, Q38, Q43, Q44 | Abstenerse cuando el dato no consta |
 | `adversarial` (6) | Q06, Q07, Q45–Q48 | Atribución, fechas y resistencia a inyección de prompt |
 
 Partición: **20 `dev`** y **32 `test`** (campo `split`).
@@ -37,7 +37,7 @@ Partición: **20 `dev`** y **32 `test`** (campo `split`).
 |---|---|
 | `id`, `split`, `tipo` | `Q01`…`Q52`; `dev` o `test`; tipo de la tabla anterior |
 | `señal` | `lexica` / `mixta` / `null` (solo anotada donde se evaluó) |
-| `idioma_pregunta`, `idioma_evidencia` | Idioma real del texto, no la etiqueta del corpus (tiene errores). `null` = sin anotar. En las preguntas con relevantes que no lo tenían, `idioma_evidencia` se completó con el idioma detectado en la Fase A (lingua), que coincide con las 14 anotaciones manuales previas. Queda `null` en las preguntas sin relevantes |
+| `idioma_pregunta`, `idioma_evidencia` | Idioma real del texto, no la etiqueta del corpus (tiene errores). `null` = sin anotar. En las preguntas con relevantes que no lo tenían, `idioma_evidencia` se completó con el idioma detectado en la Fase A (lingua), que coincide con las 14 anotaciones manuales previas. Queda `null` en las preguntas sin relevantes. Las 12 que obtuvieron relevantes tras el pooling se completaron igual; si los documentos de grado 2 mezclan idiomas (Q21, Q39, Q40, Q42), se toma el mayoritario, de modo que en las preguntas `ambigua` el campo no refleja la mezcla. Q15 se detectó como `tl` por un error del detector (texto en español con mojibake) |
 | `colecciones` | Colecciones de los documentos asociados |
 | `ventana_fecha` | `{"desde": "AAAA-MM-DD", "hasta": "AAAA-MM-DD"}` si la pregunta se limita a un rango de `created_at` (ambos extremos incluidos); `null` si no. Un documento fuera de la ventana no cuenta como relevante, aunque trate el mismo tema |
 | `pregunta` | Texto que se envía al sistema, tal cual |

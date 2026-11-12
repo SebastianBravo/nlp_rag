@@ -60,8 +60,11 @@ def main():
         if q['id'] in final:
             new['relevantes'] = pooling.merge_relevantes(q, final[q['id']])
             relevant_now = any(r['grado'] >= 1 for r in new['relevantes'])
-            if q['debe_abstenerse'] and relevant_now:
-                problems.append(f"{q['id']} debe abstenerse pero quedó con documentos relevantes: revisa la pregunta o los grados")
+            answered_now = any(r['grado'] >= 2 for r in new['relevantes'])
+            if q['debe_abstenerse'] and answered_now:
+                problems.append(f"{q['id']} debe abstenerse pero tiene documentos que responden (grado 2): revisa la pregunta o los grados")
+            elif q['debe_abstenerse'] and relevant_now:
+                warnings.append(f"{q['id']} se abstiene y solo tiene contexto parcial (grado 1)")
             if not q['debe_abstenerse'] and not relevant_now:
                 warnings.append(f"{q['id']} no queda con documentos relevantes (¿debería abstenerse?)")
             new['pooling_pendiente'] = False
