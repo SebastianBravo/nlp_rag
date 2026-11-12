@@ -155,9 +155,11 @@ def main(argv=None):
     summary.to_csv(tables / 'generacion_resumen.csv', index=False)
     latency = latency_summary(cells)
     latency.to_csv(tables / 'generacion_latencia.csv', index=False)
-    main_table = summary[(summary['condition'] == 'principal') & (summary['split'] == 'todas')]
-    print(f'\n{len(cells)} celdas ({int(cells["error"].sum())} con error). Experimento principal, todas las preguntas:')
-    print(main_table.pivot(index='model', columns='metric', values='mean').round(3).to_string())
+    print(f'\n{len(cells)} celdas ({int(cells["error"].sum())} con error).')
+    for split, label in (('test', 'partición test (resultado principal)'), ('todas', 'dev y test juntas')):
+        table = summary[(summary['condition'] == 'principal') & (summary['split'] == split)]
+        print(f'Experimento principal, {label}:')
+        print(table.pivot(index='model', columns='metric', values='mean').round(3).to_string())
 
 if __name__ == '__main__':
     main()
