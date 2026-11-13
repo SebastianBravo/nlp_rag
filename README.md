@@ -241,7 +241,7 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 | `ingest` | Carga en Milvus una colección de `configs/milvus.yaml` desde los Parquet de chunks y de vectores. Hace `upsert` por lotes (repetirla no duplica), reintenta con espera creciente, retoma desde el último lote si se interrumpe y verifica el conteo. Opciones: `--collection`, `--fresh` (borra la colección y su progreso antes de cargar) |
 | `milvus_report` | Verifica las colecciones: conteos, calibración de `ef` frente a la búsqueda exacta, filtros y métricas en dev. Con `--snapshot` y `--compare` comprueba la persistencia tras reiniciar Milvus. Escribe `reports/milvus/` |
 | `pool_gold` | Pooling del gold: consulta las colecciones A y B de Milvus con cada pregunta, une los primeros 20 documentos de cada una y escribe `data/gold/pooling.jsonl` (solo ids y rangos), la cobertura de los relevantes ya anotados y las hojas de anotación `.xlsx` (locales, con texto del corpus; en `data/annotation/`). Con `--fase2`, la hoja de validación de las respuestas de referencia |
-| `apply_annotations` | Lee las hojas llenas, escribe `data/gold/anotacion_1.jsonl` y `anotacion_2.jsonl` (ids y grados), calcula el acuerdo entre anotadores en `reports/gold/` y prepara `desacuerdos.xlsx` |
+| `apply_annotations` | Lee las hojas llenas, escribe `data/gold/anotacion_1.jsonl` y `anotacion_2.jsonl` (ids y grados), calcula el acuerdo entre las dos preanotaciones en `reports/gold/` y prepara `desacuerdos.xlsx` |
 | `freeze_gold` | Aplica los grados finales al gold y lo congela (`estado = congelado`). Sin `--write` es un ensayo; bloquea si queda pooling pendiente, desacuerdos sin resolver o una pregunta sin respuesta con documentos relevantes |
 | `evaluate` | Evaluación del taller con `configs/experimentos.yaml`. `retrieval` mide A y B con el gold; `generation` ejecuta las condiciones, los modelos y las corridas, y reanuda si se interrumpe. Escribe `data/logs/eval/generacion.jsonl` (con respuestas completas, no se versiona) y `reports/eval/` |
 | `analyze` | Métricas por celda, intervalos bootstrap del 95 % y latencias (frío y caliente) en `reports/eval/tables/`, sin texto del corpus. Con otro `--raw`, usar un `--reports` distinto para no sobrescribir las tablas principales |
@@ -306,7 +306,7 @@ python -m scripts.analyze
 python -m scripts.judge_prepare
 ```
 
-Los lotes de `data/logs/eval/juez/lote_parte_NN.md` se entregan a cada juez en un chat nuevo. Sus salidas se guardan como `<juez>.jsonl` junto con `auditoria_humana.csv` (la hoja que llena el evaluador humano), y entonces:
+Los lotes de `data/logs/eval/juez/lote_parte_NN.md` se entregan a cada juez en un chat nuevo. Sus salidas se guardan como `<juez>.jsonl` junto con `auditoria_humana.csv` (la hoja de la auditoría del equipo), y entonces:
 
 ```bash
 python -m scripts.judge_analyze
@@ -347,7 +347,7 @@ El perfilado completo (integridad, idioma, fechas, duplicados, ruido, sesgos) y 
 - **Documentos de evidencia:** los 53 están en la muestra de 10.000.
 - **Uso:** `dev` sirve para ajustar y `test` solo para reportar.
 
-Está congelado (`estado = congelado`, tag `gold-v1`): el pooling con las colecciones de Milvus (`pool_gold`), la segunda anotación y su acuerdo (`apply_annotations`) y el congelamiento (`freeze_gold`) ya se ejecutaron. El esquema, las métricas y el procedimiento están en [`data/gold/README.md`](data/gold/README.md).
+Está congelado (`estado = congelado`, tag `gold-v1`): el pooling con las colecciones de Milvus (`pool_gold`), la doble anotación (preanotaciones de dos LLM de apoyo, validadas por el equipo) y su acuerdo (`apply_annotations`) y el congelamiento (`freeze_gold`) ya se ejecutaron. El esquema, las métricas y el procedimiento están en [`data/gold/README.md`](data/gold/README.md).
 
 ## Estructura
 
