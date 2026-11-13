@@ -25,7 +25,7 @@ El nombre de cada colección identifica encoder, segmentación, alcance y versi�
 | `rag_granite97m_win256_s2k_v1` | A (ventana) | piloto de 2.000 | 6.659 |
 | `rag_granite97m_sent256_s10k_v1` | B | 10.000 | 37.919 |
 | `rag_granite97m_win256_s10k_v1` | A | 10.000 | 33.431 |
-| `rag_granite97m_sent256_adv_v1` | B | documentos de Q45-Q48 y 4 sintéticos | 36 |
+| `rag_granite97m_sent256_adv_v1` | B | documentos de Q45-Q48 y 4 sintéticos | 44 (36 con el gold en borrador) |
 
 - **La API usa `sent256_s10k`**: la estrategia B es la candidata por defecto, y la muestra de 10.000 contiene los 53 documentos de evidencia del gold.
 - **El piloto de 2.000** sirve para iterar rápido sobre la orquestación. Solo contiene 7 de esos 53 documentos, así que no sirve para medir con el gold.

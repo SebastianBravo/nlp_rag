@@ -14,10 +14,10 @@ Este documento reúne las decisiones de diseño del proyecto, con las alternativ
 | # | Decisión | Alternativas | Motivo y evidencia |
 |---|---|---|---|
 | 1 | Un solo módulo carga el encoder (`app/embeddings.py`) y lo usan la API y el pipeline | Un servicio de embeddings aparte | Las consultas y los pasajes se codifican exactamente igual, con menos infraestructura |
-| 2 | Python 3.12 en las imágenes y en el entorno local | 3.11 | Todas las dependencias instalan en 3.12, y una sola versión evita diferencias entre local y Docker |
+| 2 | Python 3.12 en las imágenes y en el entorno local | 3.11 | Todas las dependencias instalan en 3.12, y una sola versión evita diferencias entre local y Docker. Excepción: la evaluación de la Fase H corrió en el entorno local con Python 3.13.7 |
 | 3 | Un Dockerfile e imagen por servicio (`api`, `frontend`, `pipeline`); `docker-compose.yml` solo incluye los archivos de `docker/` | Una imagen compartida; un solo compose | Cada imagen lleva solo sus dependencias (el frontend no instala torch). `pipeline` incluye las dependencias de `api`, así que el encoder es idéntico en ambas: se verificó que producen el mismo vector |
 | 4 | torch solo CPU en las imágenes | Rueda de PyPI con CUDA | Los contenedores no usan GPU. La imagen de la API bajó de 10,4 GB a 2,1 GB |
-| 5 | Todo paso del pipeline corre en el contenedor `pipeline` (perfil `tools`); los notebooks solo leen artefactos | Notebooks que recalculan | Ninguna cifra del informe depende del entorno local |
+| 5 | Todo paso del pipeline corre en el contenedor `pipeline` (perfil `tools`); los notebooks solo leen artefactos | Notebooks que recalculan | Las cifras de las fases de datos e indexación no dependen del entorno local. Excepción: la evaluación de la Fase H corrió con Ollama nativo y Python local, y se declara en `docs/EVALUACION.md` |
 | 6 | Etapas desacopladas con artefactos intermedios: Parquet → perfilado → muestras → chunks → vectores → Milvus | Ingesta que hace todo de una vez | Cada etapa se repite sin rehacer las anteriores y se puede comparar por separado |
 | 7 | `pytest.ini` con `pythonpath = .` | Usar siempre `python -m pytest` | `pytest` a secas fallaba al importar `scripts` |
 | 8 | Los registros crudos por ejecución (`reports/**/*.jsonl`) no se versionan | Versionarlos | Contienen texto del corpus |

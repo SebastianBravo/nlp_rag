@@ -188,7 +188,7 @@ La API busca en la colección de `MILVUS_COLLECTION`. Las cinco colecciones se d
 | `win256_s10k` | `rag_granite97m_win256_s10k_v1` | Estrategia A, muestra de 10.000 (33.431 chunks) |
 | `sent256_s2k` | `rag_granite97m_sent256_s2k_v1` | Estrategia B, piloto de 2.000 (7.517 chunks) |
 | `win256_s2k` | `rag_granite97m_win256_s2k_v1` | Estrategia A, piloto de 2.000 (6.659 chunks) |
-| `sent256_adv` | `rag_granite97m_sent256_adv_v1` | Prueba adversarial (36 chunks): documentos de Q45-Q48 y 4 documentos sintéticos con inyección de prompt |
+| `sent256_adv` | `rag_granite97m_sent256_adv_v1` | Prueba adversarial (44 chunks con gold-v1): documentos de Q45-Q48 y 4 documentos sintéticos con inyección de prompt |
 
 Para que la API use otra colección, se cambia `MILVUS_COLLECTION` en `.env` y se recrea el servicio:
 
