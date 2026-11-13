@@ -32,7 +32,7 @@ El experimento principal cambia solo el LLM. Todo lo demás queda fijo: corpus, 
 | D. Milvus | Colección, campos, índice, filtros, reindexación idempotente, conteos y persistencia | Terminada | [`reports/milvus/resumen.md`](reports/milvus/resumen.md) |
 | E. Orquestación RAG | Recuperar y generar por separado, prompts versionados, presupuesto de contexto, citas y abstención | Terminada | [`reports/rag/resumen.md`](reports/rag/resumen.md) |
 | F. API e interfaz | Respuesta, tiempos, evidencias y enlaces; errores, estados de carga y modelo elegido en vivo | Terminada | [`app/`](app/) y [Uso](#uso) |
-| G. Operación | Instrucciones desde cero, modelos, pruebas, persistencia, logs y límites de recursos | Parcial | este README |
+| G. Operación | Instrucciones desde cero, modelos, pruebas, persistencia, logs y límites de recursos | Terminada, verificada desde un clon limpio | [Evidencias de funcionamiento](#evidencias-de-funcionamiento) |
 | Gold estándar | 40 preguntas o más: ambas colecciones, varios idiomas y fechas, `dev` y `test` | Congelado (`gold-v1`, 52 preguntas) | [`data/gold/README.md`](data/gold/README.md) |
 | Evaluación | 3 LLM o más, ablaciones y métricas de recuperación, generación, rendimiento y robustez | Ejecutada, con resultados | [`docs/EVALUACION.md`](docs/EVALUACION.md) y `reports/eval/tables/` |
 
@@ -428,6 +428,57 @@ Cada experimento debe registrar:
 - el hardware.
 
 Las muestras se obtienen con muestreo estratificado y semilla fija. Las tareas del pipeline registran sus parámetros, versiones y hashes de entrada en JSON: `reports/eda/profile.json` y `reports/<etapa>/runs/`.
+
+## Evidencias de funcionamiento
+
+Verificación desde cero, hecha el 12 de noviembre de 2026 en un clon limpio del repositorio (sin `data/` y con volúmenes nuevos), siguiendo [Puesta en marcha](#puesta-en-marcha) con la muestra de 2.000 documentos. Entorno: Mac con Apple Silicon y Docker Desktop con 12 CPU y 7,748 GiB de RAM asignados; el Ollama del contenedor corre en CPU.
+
+| Paso | Resultado | Medida |
+|---|---|---|
+| Build de la imagen `pipeline` | Construida | 455 s (414 s de `pip install`) |
+| `download_corpus` | 245 MB; el sha256 coincide con el publicado (`f4a669f1…b181728`) | n/a |
+| `profile_corpus` | Perfilado y muestras | 127,8 s |
+| `build_chunks` (B, 2.000 documentos) | 7.581 chunks, 7.517 tras deduplicar; las mismas cifras que las del repositorio | 3,79 s |
+| `embed_chunks` (granite-97m, B, 2.000) | Vectores de 384 dimensiones, calculados sin reutilizar | 243 s (30,94 chunks/s), pico de 2.075 MB de RSS |
+| `ingest --collection sent256_s2k` | 7.517 entidades, colección creada | 1,3 s |
+| `/health` | `status: ok` | n/a |
+| Pruebas en Docker, con la pila en marcha | 166 pasaron | 16,4 s |
+
+Respuesta de `/health` (recortada):
+
+```json
+{"status":"ok",
+ "encoder":{"model":"ibm-granite/granite-embedding-97m-multilingual-r2","revision":"835ad14087e140460703cf0fae09f97d469d65c2","normalize":true,"loaded":true},
+ "milvus":{"ok":true,"collection":"rag_granite97m_sent256_s2k_v1","entities":7517},
+ "ollama":{"ok":true,"version":"0.40.16","models":3}}
+```
+
+Una consulta a `/ask` con `qwen2.5:1.5b`, `k = 5` y arranque en frío tardó 5,6 s en total: 133 ms en vectorizar la pregunta, 6 ms en buscar en Milvus, 1,8 s en cargar el modelo, 3,2 s en procesar el prompt (1.477 tokens) y 0,45 s en generar 52 tokens. La respuesta salió con el aviso `sin_citas`: el prompt por defecto prioriza abstenerse bien y a veces no cita (ver [Limitaciones actuales](#limitaciones-actuales)).
+
+### Capturas de la interfaz
+
+Capturas de la interfaz de esa misma pila (colección `sent256_s2k`, 7.517 fragmentos, prompt `rag_v1`, temperatura 0,0 y semilla 42). En las tres se ven la respuesta, los tiempos, los tokens por segundo, los fragmentos usados en el contexto y la ejecución, con su identificador, para localizarla en `data/logs/ask/`.
+
+**Respuesta con `llama3.2:3b`, y un caso de error.** Pregunta amplia: «¿Qué se reporta sobre el tema principal del corpus?». Total 8,8 s (recuperación 0,21 s, generación 8,6 s), 57,15 tokens/s, 5 de 5 fragmentos en el contexto.
+
+![Respuesta de llama3.2:3b con citas desfasadas](docs/evidencias/ui_respuesta_llama32_3b.png)
+
+El modelo no responde la pregunta: resume cada fragmento y los numera `[1]` a `[4]`, pero se refiere a ellos como «documento n="2"» a «n="5"». Esos números corresponden a las evidencias 2 a 5, y la evidencia 1 (una publicación de Bluesky de 43 caracteres) queda sin mencionar. La interfaz marca la evidencia `[1]` como «citada», aunque el resumen que lleva ese `[1]` corresponde a la evidencia 2. Es un ejemplo de por qué la métrica automática de citas sobrestima la calidad de las referencias (ver [`docs/EVALUACION.md`](docs/EVALUACION.md)).
+
+**Abstención con `qwen2.5:1.5b`.** Pregunta sin relación con el corpus: «¿Quién descubrió américa?». El modelo se abstiene y la interfaz lo señala. Total 2,4 s (recuperación 0,03 s), 126,21 tokens/s.
+
+![Abstención de qwen2.5:1.5b](docs/evidencias/ui_abstencion_qwen25_1_5b.png)
+
+**Abstención con `llama3.2:3b`, en arranque en frío.** Pregunta: «¿Quién lloró en el árbol de la noche triste?». El modelo se abstiene. Total 10,9 s (recuperación 0,07 s, generación 10,8 s), 62,14 tokens/s. La interfaz indica el arranque en frío, que suma la carga del modelo.
+
+![Abstención de llama3.2:3b en arranque en frío](docs/evidencias/ui_abstencion_llama32_3b_frio.png)
+
+### Persistencia, registros y recursos
+
+- **Persistencia.** Milvus guarda sus datos en los volúmenes `etcd_data`, `minio_data` y `milvus_data`; Ollama, los modelos en `ollama_data`; y el encoder, sus pesos en `hf_cache`. `./data` y `./reports` se montan desde el equipo. Tras `docker compose restart milvus`, las cinco colecciones conservan sus conteos y devuelven los mismos 10 primeros resultados para cinco consultas fijas (ver [`reports/milvus/resumen.md`](reports/milvus/resumen.md)). `docker compose down -v` borra los volúmenes: hay que descargar los modelos de nuevo y recargar las colecciones, que sale rápido desde `data/embeddings/`.
+- **Registros.** `docker compose logs -f <servicio>` (`api`, `milvus`, `ollama`, `frontend`). Cada consulta a `/ask` queda en `data/logs/ask/<fecha>.jsonl`, con su `run_id`, parámetros y evidencias. `check_rag` y la evaluación escriben en `data/logs/check_rag/` y `data/logs/eval/`.
+- **Límites de recursos.** Los archivos de Compose no fijan `cpus` ni `mem_limit` por contenedor: el tope lo pone la máquina virtual de Docker (12 CPU y 7,748 GiB en esta verificación; las medidas de desarrollo del repositorio, con 10 CPU y 8 GB). Para que Ollama no sature la VM, `docker/ollama.yml` mantiene un solo modelo en memoria (`OLLAMA_MAX_LOADED_MODELS=1`) y desactiva la caché de prompts en RAM (`LLAMA_ARG_CACHE_RAM=0`), y `LLM_NUM_THREAD` limita los hilos por petición. En esta verificación solo se midió la memoria de la vectorización (pico de 2.075 MB); no se midió el consumo por contenedor en servicio.
+- **GPU.** El contenedor de Ollama no usa GPU en macOS. La GPU de Apple solo se aprovecha con Ollama nativo, que es como se hizo la evaluación final (ver [Reproducir la evaluación](#reproducir-la-evaluación)). En esta verificación no se midió la memoria de GPU.
 
 ## Solución de problemas
 
