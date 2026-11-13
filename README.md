@@ -98,6 +98,23 @@ docker compose exec ollama ollama pull qwen2.5:1.5b
 
 Las demás colecciones (piloto de 2.000, estrategia A y la adversarial) se cargan igual con su clave. El orden completo está en [Reproducir los resultados desde cero](#reproducir-los-resultados-desde-cero).
 
+> **Orden:** `docker compose up -d` debe ir antes de cualquier comando que use Milvus (`ingest`, `milvus_report`, `check_rag`) y Milvus tiene que estar `healthy` (`docker compose ps`). Si no lo está, `ingest` termina con «Milvus no responde en milvus:19530; ejecuta `docker compose up -d`».
+
+### Prueba rápida con la muestra piloto
+
+Para comprobar la instalación sin esperar los 35 minutos de la muestra de 10.000, se puede usar la de 2.000 documentos (en la verificación con 12 CPU: 128 s el perfilado, 243 s la vectorización y 1,3 s la carga, sin contar las descargas):
+
+```bash
+docker compose --profile tools run --rm pipeline python -m scripts.download_corpus
+docker compose --profile tools run --rm pipeline python -m scripts.profile_corpus
+docker compose --profile tools run --rm pipeline python -m scripts.build_chunks --strategy B --sample data/samples/sample_2000_ids.txt
+docker compose --profile tools run --rm pipeline python -m scripts.embed_chunks --encoder granite-97m --strategy B --sample sample_2000
+docker compose --profile tools run --rm pipeline python -m scripts.ingest --collection sent256_s2k
+docker compose exec ollama ollama pull qwen2.5:1.5b
+```
+
+Luego se cambia en `.env` la línea `MILVUS_COLLECTION=rag_granite97m_sent256_s2k_v1` y se recrea la API (`docker compose up -d --force-recreate api`). Comprobación: `curl -s localhost:8000/health` debe mostrar `"entities": 7517`.
+
 Después:
 
 - Interfaz: http://localhost:8501
@@ -287,11 +304,11 @@ Si el entorno reproduce los resultados, `git status` solo muestra cambios en fec
 
 - `reports/eda/profile.json`;
 - `data/samples/*_meta.json`;
-- `reports/chunking/runs/*.json`, `reports/embeddings/runs/*.json`, `reports/milvus/runs/*.json`, `reports/rag/runs/*.json` y `reports/milvus/verificacion.json`;
-- las columnas de tiempo de `reports/chunking/tables/comparacion_*.csv`;
+- `reports/chunking/runs/*.json`, `reports/embeddings/runs/*.json`, `reports/milvus/runs/*.json`, `reports/rag/runs/*.json` y `reports/milvus/verificacion.json`. Además de fechas y tiempos, cambian los campos que dependen del recorrido: en `reports/embeddings/runs` si los vectores se reutilizaron o se calcularon (`reused_from`, `parts`, `peak_rss_mb`), en `reports/milvus/runs` si la colección se creó (`created`), y las versiones de las librerías si no coinciden con las del registro;
+- las columnas de tiempo de `reports/chunking/tables/comparacion_*.csv` y las figuras de `reports/chunking/figures/`, cuyos bytes pueden cambiar aunque los datos coincidan;
 - las latencias de `reports/milvus/tables/calibracion_ef.csv` y su figura, y las de `reports/rag/tables/dev_*.csv`.
 
-Las demás tablas, las figuras y las listas de IDs salen idénticas. El grafo HNSW puede construirse algo distinto en otra máquina, así que el Recall@10 de la calibración puede variar en milésimas. Las respuestas de los LLM usan semilla y temperatura 0, pero pueden cambiar entre versiones de Ollama o entre máquinas.
+Las demás tablas y las listas de IDs salen idénticas, y los conteos de chunks y sus estadísticas también (en la verificación desde un clon limpio, 7.581 → 7.517 chunks en la muestra de 2.000 con la estrategia B). El grafo HNSW puede construirse algo distinto en otra máquina, así que el Recall@10 de la calibración puede variar en milésimas. Las respuestas de los LLM usan semilla y temperatura 0, pero pueden cambiar entre versiones de Ollama o entre máquinas.
 
 ### Reproducir la evaluación
 
@@ -423,6 +440,7 @@ Las muestras se obtienen con muestreo estratificado y semilla fija. Las tareas d
 | Milvus se reinicia mientras Ollama genera | Con la CPU saturada, etcd se atrasa y Milvus pierde su sesión; se levanta solo (`restart: unless-stopped`). `LLM_NUM_THREAD` deja núcleos libres; si pasa seguido, bajarlo |
 | `/ask` responde 503 con "model runner has unexpectedly stopped" | El modelo no cupo en la RAM de Docker. `docker/ollama.yml` ya deja un solo modelo cargado y desactiva la caché de prompts en RAM (`LLAMA_ARG_CACHE_RAM=0`); si aun así falla, cerrar otros procesos o usar un modelo más pequeño |
 | La respuesta trae el aviso `sin_evidencia` | Los filtros no dejaron ningún fragmento. Ampliar el rango de fechas o quitar el filtro de idioma |
+| `ingest` dice «Milvus no responde en milvus:19530» | La pila no está en marcha o Milvus aún no está `healthy`. Ejecutar `docker compose up -d` y esperar a que `docker compose ps` lo muestre sano |
 | `ingest` falla porque no encuentra `data/embeddings/...` | Falta vectorizar esa estrategia y muestra con `embed_chunks`. Para el piloto basta `--reuse sample_10000` |
 | `ingest` dice que los vectores no están alineados con los chunks | Los chunks se regeneraron después de vectorizar. Hay que repetir `embed_chunks` para esa estrategia y muestra |
 | El build falla con `No space left on device` | Falta espacio en la VM de Docker. Liberar la caché con `docker builder prune` |

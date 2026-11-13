@@ -90,6 +90,14 @@ def test_adversarial_collection_joins_real_and_synthetic():
     assert chunks['chunk_id'].tolist() == ['c1', 's0'] and vectors.shape == (2, 4) and missing == []
     assert vectors[0].tolist() == [4, 5, 6, 7]
 
+def test_connect_fails_with_clear_message_when_milvus_is_down(monkeypatch):
+    class Down:
+        def __init__(self, **kw): raise ConnectionError('sin conexión')
+    monkeypatch.setattr(indexing, 'MilvusClient', Down)
+    with pytest.raises(SystemExit) as e:
+        indexing.connect('http://milvus:19530', timeout=1)
+    assert 'Milvus no responde en milvus:19530' in str(e.value) and 'docker compose up -d' in str(e.value)
+
 def _milvus_available():
     try:
         from pymilvus import MilvusClient

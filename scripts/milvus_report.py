@@ -4,13 +4,12 @@ Sin opciones: conteos frente a los Parquet, calibración de ef frente a la búsq
 en dev (Milvus frente a búsqueda exacta). Con --snapshot ETIQUETA guarda conteos y resultados fijos; con
 --compare A B compara dos snapshots (persistencia tras reiniciar Milvus).
 """
-import argparse, json, os, sys
+import argparse, json, sys
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
-from pymilvus import MilvusClient
 from app.embeddings import embed_array
 from pipeline import embedding, encoder_eval, indexing, io, metrics, milvus_eval, report, retrieval
 
@@ -31,7 +30,7 @@ def main():
         report.write_tables({'persistencia':table},out/'tables')
         print(table.to_json(orient='records',force_ascii=False)); return
     profile=yaml.safe_load(Path(cfg['encoders_config']).read_text(encoding='utf-8'))['profiles'][cfg['encoder']]
-    client=MilvusClient(uri=os.getenv('MILVUS_URI','http://milvus:19530'))
+    client=indexing.connect()
     names={k:v['name'] for k,v in cfg['collections'].items()}|{cfg['adversarial']['key']:cfg['adversarial']['name']}
     questions,paraphrases=encoder_eval.load_gold('data/gold/gold.jsonl','data/gold/parafrasis_dev.jsonl')
     originals=embed_array([q['pregunta'] for q in questions],'query',profile)

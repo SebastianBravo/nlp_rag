@@ -3,13 +3,12 @@
 Repetir la carga no duplica (upsert por chunk_id) y, si se interrumpe, retoma desde el último lote hecho.
 La colección adversarial une los documentos sintéticos del gold (Q45-Q48) con los reales de esas preguntas.
 """
-import argparse, json, os, platform, sys
+import argparse, json, platform, sys
 from datetime import datetime, timezone
 from importlib.metadata import version
 from pathlib import Path
 import pandas as pd
 import yaml
-from pymilvus import MilvusClient
 from app.embeddings import count_tokens, embed_array, settings, token_offsets
 from pipeline import chunking, embedding, indexing, report
 
@@ -23,6 +22,7 @@ def main():
     p.add_argument('--embeddings-dir',default='data/embeddings')
     p.add_argument('--reports',default='reports/milvus')
     args=p.parse_args()
+    client=indexing.connect()
     profiles=yaml.safe_load(Path(cfg['encoders_config']).read_text(encoding='utf-8'))['profiles']
     encoder,chunker=profiles[cfg['encoder']],profiles[cfg['chunker']]
     log=lambda m: print(f'· {m}',file=sys.stderr,flush=True)
@@ -55,7 +55,6 @@ def main():
         if ids!=chunks['chunk_id'].tolist(): raise SystemExit(f'{vp} no está alineado con {cp}: vuelve a ejecutar embed_chunks.')
         inputs=[cp,vp]
         meta={'strategy':spec['strategy'],'sample':spec['sample']}
-    client=MilvusClient(uri=os.getenv('MILVUS_URI','http://milvus:19530'))
     info=indexing.ingest(client,name,chunks,vectors,cfg,Path(cfg['ingest']['checkpoint_dir'])/f'{name}.json',
                          indexing.fingerprint(*inputs),args.fresh,log)
     run=report.to_jsonable({'created_at_utc':datetime.now(timezone.utc).isoformat(timespec='seconds'),'key':args.collection,**meta,**info,

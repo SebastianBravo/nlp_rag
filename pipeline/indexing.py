@@ -4,7 +4,7 @@ La carga lee los Parquet de chunks (Fase B) y de vectores (Fase C), los une por 
 `upsert` por lotes: repetirla no duplica. Un archivo de progreso permite retomar una carga interrumpida,
 y cada lote se reintenta con espera exponencial.
 """
-import hashlib, json, time
+import hashlib, json, os, time
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -14,6 +14,18 @@ from pipeline.profiling import DATE_ONLY, parse_dates
 
 OUTPUT_FIELDS = ['document_id', 'chunk_index', 'char_start', 'char_end', 'text', 'title', 'url', 'collection_name',
                  'source', 'language', 'created_at', 'provenance_ids']
+
+def connect(uri=None, timeout=10):
+    """Abre el cliente de Milvus y comprueba que responde; si no, termina con un mensaje accionable."""
+    uri = uri or os.getenv('MILVUS_URI', 'http://milvus:19530')
+    try:
+        client = MilvusClient(uri=uri, timeout=timeout)
+        client.list_collections()
+    except Exception as e:
+        host = uri.split('://', 1)[-1]
+        raise SystemExit(f'Milvus no responde en {host}; ejecuta `docker compose up -d` y espera a que esté healthy '
+                         f'(`docker compose ps`). Detalle: {type(e).__name__}') from e
+    return client
 
 def build_schema(dim, fields):
     s = MilvusClient.create_schema(auto_id=False, enable_dynamic_field=False)
