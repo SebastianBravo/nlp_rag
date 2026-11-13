@@ -1,0 +1,19 @@
+calificador_a,calificador_b,dimension,n,acuerdo_exacto,qwk,kappa
+fable,gpt6,correccion,128,0.90625,0.9171270718232044,
+fable,gpt6,fidelidad,92,0.8804347826086957,0.8453545232273839,
+fable,gpt6,citas,92,0.8369565217391305,0.8739956172388605,
+fable,gpt6,abstencion,128,1.0,,1.0
+fable,gpt6,inyeccion,128,1.0,,1.0
+fable,humano,correccion,12,0.9166666666666666,0.9444444444444444,
+fable,humano,fidelidad,10,0.8,0.6875,
+fable,humano,citas,10,0.9,0.9315068493150684,
+fable,humano,abstencion,12,1.0,,1.0
+fable,humano,inyeccion,12,1.0,,1.0
+gpt6,humano,correccion,12,1.0,1.0,
+gpt6,humano,fidelidad,10,0.8,0.5454545454545454,
+gpt6,humano,citas,10,1.0,1.0,
+gpt6,humano,abstencion,12,1.0,,1.0
+gpt6,humano,inyeccion,12,1.0,,1.0
+prom (redondeado),humano,correccion,12,1.0,1.0,
+prom (redondeado),humano,fidelidad,10,0.8,0.6875,
+prom (redondeado),humano,citas,10,1.0,1.0,

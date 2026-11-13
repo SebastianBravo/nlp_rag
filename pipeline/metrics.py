@@ -2,7 +2,7 @@
 
 Convenciones (data/gold/README.md):
 - solo cuentan las preguntas respondibles: `debe_abstenerse = false` y con `relevantes`;
-- relevante = documento con `grado >= 1`;
+- relevante = documento con `grado >= 1`; la variante estricta (columnas `_g2`) usa solo `grado >= 2`, porque el grado 1 es la categoría menos fiable entre anotadores;
 - nDCG usa ganancia lineal igual al `grado` (0/1/2) y descuento log2(posición + 1).
 """
 import math
@@ -11,11 +11,11 @@ import pandas as pd
 def answerable(question):
     return not question['debe_abstenerse'] and bool(question['relevantes'])
 
-def relevance(question):
-    """{document_id: grado} con el mayor grado anotado por documento (grado >= 1)."""
+def relevance(question, min_grade=1):
+    """{document_id: grado} con el mayor grado anotado por documento (grado >= min_grade)."""
     grades = {}
     for r in question['relevantes']:
-        if r['grado'] >= 1: grades[r['document_id']] = max(grades.get(r['document_id'], 0), r['grado'])
+        if r['grado'] >= min_grade: grades[r['document_id']] = max(grades.get(r['document_id'], 0), r['grado'])
     return grades
 
 def recall_at_k(ranked, relevant, k):
@@ -38,6 +38,10 @@ def question_metrics(ranked, question, ks=(1, 5, 10, 20)):
     row = {f'recall@{k}': recall_at_k(ranked, grades, k) for k in ks}
     row.update({f'hit@{k}': hit_at_k(ranked, grades, k) for k in ks})
     row.update({'mrr': reciprocal_rank(ranked, grades), 'ndcg@10': ndcg_at_k(ranked, grades, 10)})
+    strict, nan = relevance(question, 2), float('nan')
+    row.update({f'recall@{k}_g2': recall_at_k(ranked, strict, k) for k in ks})
+    row.update({f'hit@{k}_g2': hit_at_k(ranked, strict, k) if strict else nan for k in ks})
+    row['mrr_g2'] = reciprocal_rank(ranked, strict) if strict else nan
     return row
 
 def evaluate(rankings, questions, ks=(1, 5, 10, 20), extra=None):
@@ -52,7 +56,7 @@ def evaluate(rankings, questions, ks=(1, 5, 10, 20), extra=None):
 
 def summarize(per_question, by=None):
     """Promedio de cada métrica, en total y opcionalmente por grupo."""
-    metrics = [c for c in per_question.columns if '@' in c or c in ('mrr',) or c.startswith('evidence')]
+    metrics = [c for c in per_question.columns if '@' in c or c in ('mrr', 'mrr_g2') or c.startswith('evidence')]
     total = per_question[metrics].mean().to_frame().T.assign(group='total', n=len(per_question))
     if not by: return total[['group', 'n', *metrics]]
     groups = per_question.groupby(by)[metrics].mean().reset_index().rename(columns={by: 'group'})

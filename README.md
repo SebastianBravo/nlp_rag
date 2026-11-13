@@ -33,8 +33,8 @@ El experimento principal cambia solo el LLM. Todo lo demás queda fijo: corpus, 
 | E. Orquestación RAG | Recuperar y generar por separado, prompts versionados, presupuesto de contexto, citas y abstención | Terminada | [`reports/rag/resumen.md`](reports/rag/resumen.md) |
 | F. API e interfaz | Respuesta, tiempos, evidencias y enlaces; errores, estados de carga y modelo elegido en vivo | Terminada | [`app/`](app/) y [Uso](#uso) |
 | G. Operación | Instrucciones desde cero, modelos, pruebas, persistencia, logs y límites de recursos | Parcial | este README |
-| Gold estándar | 40 preguntas o más: ambas colecciones, varios idiomas y fechas, `dev` y `test` | Borrador con 52 preguntas | [`data/gold/README.md`](data/gold/README.md) |
-| Evaluación | 3 LLM o más, ablaciones y métricas de recuperación, generación, rendimiento y robustez | Pendiente | [`docs/EVALUACION.md`](docs/EVALUACION.md) |
+| Gold estándar | 40 preguntas o más: ambas colecciones, varios idiomas y fechas, `dev` y `test` | Congelado (`gold-v1`, 52 preguntas) | [`data/gold/README.md`](data/gold/README.md) |
+| Evaluación | 3 LLM o más, ablaciones y métricas de recuperación, generación, rendimiento y robustez | Ejecutada, con resultados | [`docs/EVALUACION.md`](docs/EVALUACION.md) y `reports/eval/tables/` |
 
 Las decisiones de diseño de todas las fases, con sus alternativas y evidencia, están en [`docs/decisiones.md`](docs/decisiones.md).
 
@@ -240,6 +240,13 @@ docker compose --profile tools run --rm pipeline python -m scripts.<tarea>
 | `encoder_report` | Analiza el encoder con las preguntas `dev` del gold: variantes de consulta, paráfrasis y traducción, idiomas, dimensión y vecinos de ejemplo. Escribe `reports/embeddings/` |
 | `ingest` | Carga en Milvus una colección de `configs/milvus.yaml` desde los Parquet de chunks y de vectores. Hace `upsert` por lotes (repetirla no duplica), reintenta con espera creciente, retoma desde el último lote si se interrumpe y verifica el conteo. Opciones: `--collection`, `--fresh` (borra la colección y su progreso antes de cargar) |
 | `milvus_report` | Verifica las colecciones: conteos, calibración de `ef` frente a la búsqueda exacta, filtros y métricas en dev. Con `--snapshot` y `--compare` comprueba la persistencia tras reiniciar Milvus. Escribe `reports/milvus/` |
+| `pool_gold` | Pooling del gold: consulta las colecciones A y B de Milvus con cada pregunta, une los primeros 20 documentos de cada una y escribe `data/gold/pooling.jsonl` (solo ids y rangos), la cobertura de los relevantes ya anotados y las hojas de anotación `.xlsx` (locales, con texto del corpus; en `data/annotation/`). Con `--fase2`, la hoja de validación de las respuestas de referencia |
+| `apply_annotations` | Lee las hojas llenas, escribe `data/gold/anotacion_1.jsonl` y `anotacion_2.jsonl` (ids y grados), calcula el acuerdo entre las dos preanotaciones en `reports/gold/` y prepara `desacuerdos.xlsx` |
+| `freeze_gold` | Aplica los grados finales al gold y lo congela (`estado = congelado`). Sin `--write` es un ensayo; bloquea si queda pooling pendiente, desacuerdos sin resolver o una pregunta sin respuesta con documentos relevantes |
+| `evaluate` | Evaluación del taller con `configs/experimentos.yaml`. `retrieval` mide A y B con el gold; `generation` ejecuta las condiciones, los modelos y las corridas, y reanuda si se interrumpe. Escribe `data/logs/eval/generacion.jsonl` (con respuestas completas, no se versiona) y `reports/eval/` |
+| `analyze` | Métricas por celda, intervalos bootstrap del 95 % y latencias (frío y caliente) en `reports/eval/tables/`, sin texto del corpus. Con otro `--raw`, usar un `--reports` distinto para no sobrescribir las tablas principales |
+| `judge_prepare` | Prepara el lote anónimo para los jueces LLM y la hoja de auditoría humana en `data/logs/eval/juez/` (contiene texto del corpus, no se versiona) |
+| `judge_analyze` | Lee las calificaciones de los jueces y la auditoría humana, calcula el acuerdo y las tablas `juez_*.csv` en `reports/eval/tables/` |
 | `check_rag` | Revisa el RAG solo con las preguntas `dev`. Con `--calibrar` mide en cada LLM los tokens reales del prompt frente a los del encoder y propone `LLM_TOKEN_FACTOR`; sin esa opción responde las preguntas con cada prompt y modelo dados y resume abstención, citas, tokens y latencias. Escribe `reports/rag/`; las respuestas completas van a `data/logs/check_rag/`. Opciones: `--prompts`, `--models`, `--k`, `--calibrar` |
 
 La ingesta necesita Milvus en marcha (`docker compose up -d`). El código va dentro de la imagen: después de cambiarlo hay que reconstruir con `docker compose --profile tools build pipeline`.
@@ -286,6 +293,27 @@ Si el entorno reproduce los resultados, `git status` solo muestra cambios en fec
 
 Las demás tablas, las figuras y las listas de IDs salen idénticas. El grafo HNSW puede construirse algo distinto en otra máquina, así que el Recall@10 de la calibración puede variar en milésimas. Las respuestas de los LLM usan semilla y temperatura 0, pero pueden cambiar entre versiones de Ollama o entre máquinas.
 
+### Reproducir la evaluación
+
+La evaluación se ejecutó en el Mac local, con la venv y con Ollama nativo (en Apple Silicon usa la GPU), no en el contenedor `pipeline`. Milvus sigue en Docker:
+
+```bash
+export MILVUS_URI=http://localhost:19530
+export OLLAMA_URL=http://localhost:11434
+python -m scripts.evaluate retrieval
+python -m scripts.evaluate generation
+python -m scripts.analyze
+python -m scripts.judge_prepare
+```
+
+Los lotes de `data/logs/eval/juez/lote_parte_NN.md` se entregan a cada juez en un chat nuevo. Sus salidas se guardan como `<juez>.jsonl` junto con `auditoria_humana.csv` (la hoja de la auditoría del equipo), y entonces:
+
+```bash
+python -m scripts.judge_analyze
+```
+
+La generación completa (4 modelos, 6 condiciones, 3 corridas, 52 preguntas) son 3.744 celdas y tarda varias horas. Los parámetros están en `configs/experimentos.yaml`.
+
 ## Modelos LLM
 
 ```bash
@@ -319,7 +347,7 @@ El perfilado completo (integridad, idioma, fechas, duplicados, ruido, sesgos) y 
 - **Documentos de evidencia:** los 53 están en la muestra de 10.000.
 - **Uso:** `dev` sirve para ajustar y `test` solo para reportar.
 
-Está en borrador: falta el pooling con las colecciones de Milvus, el acuerdo entre anotadores y congelar `test`. El esquema y las métricas están en [`data/gold/README.md`](data/gold/README.md).
+Está congelado (`estado = congelado`, tag `gold-v1`): el pooling con las colecciones de Milvus (`pool_gold`), la doble anotación (preanotaciones de dos LLM de apoyo, validadas por el equipo) y su acuerdo (`apply_annotations`) y el congelamiento (`freeze_gold`) ya se ejecutaron. El esquema, las métricas y el procedimiento están en [`data/gold/README.md`](data/gold/README.md).
 
 ## Estructura
 
@@ -345,7 +373,7 @@ docs/           protocolo de evaluación (EVALUACION.md) y registro de decisione
 # Pruebas en Docker (referencia)
 docker compose --profile tools run --rm pipeline pytest -q
 
-# Entorno local de exploración (Python 3.12, igual que las imágenes)
+# Entorno local (las imágenes usan Python 3.12; la evaluación se ejecutó con 3.13.7)
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
 python -m nltk.downloader punkt_tab   # separador de oraciones de la segmentación (ya incluido en la imagen)
@@ -360,7 +388,7 @@ Algunas pruebas se omiten si falta lo que necesitan: las del tokenizador real, s
 - El presupuesto de tokens se mide con el tokenizador del encoder y un factor calibrado, porque Ollama no expone el conteo antes de generar. La API compara después con el conteo real y avisa si se pasó.
 - La abstención depende de que el modelo use la frase fija del prompt. Una abstención con otras palabras no se detecta.
 - El prompt por defecto (`rag_v1`) prioriza abstenerse bien: en `dev`, con `qwen2.5:1.5b`, el 45 % de sus respuestas no cita documentos. `rag_v4` cita más, pero se abstiene peor (ver [`reports/rag/resumen.md`](reports/rag/resumen.md)).
-- Todo corre en CPU: con `qwen2.5:1.5b` y `k = 5` una respuesta tarda 7,8 s de mediana, y la primera tras cambiar de modelo suma unos 6,6 s de carga. Los modelos más grandes son más lentos.
+- Hay dos entornos de medida. En Docker, en CPU, con `qwen2.5:1.5b` y `k = 5` una respuesta tarda 7,8 s de mediana, y la primera tras cambiar de modelo suma unos 6,6 s de carga (revisión de desarrollo). La evaluación final usó Ollama 0.40.16 nativo con la GPU de Apple, donde la mediana es de unos 1,24 s con el mismo modelo. Una medida adicional en Docker, en CPU (Ollama 0.40.16, VM con 12 CPU y 7,7 GB; solo test y una corrida, en `reports/eval/docker_cpu`), da 4,0 s con `qwen2.5:1.5b` y 8,4 s con `llama3.2:3b`, unas 3 veces más que en nativo, sobre todo por el procesamiento del prompt de unos 1.700 tokens. La diferencia con los 7,8 s de la revisión de desarrollo (10 núcleos, Ollama 0.40.13) no se puede atribuir a una causa con estos datos. Las latencias de un entorno no son comparables con las del otro. Los modelos más grandes son más lentos.
 - Se indexaron las muestras de 2.000 y 10.000 documentos. Vectorizar el corpus completo en CPU tomaría unas 10 horas.
 - La imagen de Ollama usa la etiqueta `latest`. Las demás imágenes de terceros tienen versión fija, pero aún sin digest.
 

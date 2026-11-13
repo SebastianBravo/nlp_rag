@@ -1,0 +1,141 @@
+{
+  "questions": 52,
+  "questions_changed": 22,
+  "disagreements_resolved": 94,
+  "double_annotated": 16,
+  "changes": [
+    {
+      "id": "Q03",
+      "before": 2,
+      "after": 7
+    },
+    {
+      "id": "Q15",
+      "before": 0,
+      "after": 14
+    },
+    {
+      "id": "Q16",
+      "before": 0,
+      "after": 3
+    },
+    {
+      "id": "Q21",
+      "before": 0,
+      "after": 21
+    },
+    {
+      "id": "Q22",
+      "before": 0,
+      "after": 13
+    },
+    {
+      "id": "Q23",
+      "before": 0,
+      "after": 2
+    },
+    {
+      "id": "Q28",
+      "before": 2,
+      "after": 3
+    },
+    {
+      "id": "Q30",
+      "before": 0,
+      "after": 3
+    },
+    {
+      "id": "Q33",
+      "before": 4,
+      "after": 7
+    },
+    {
+      "id": "Q35",
+      "before": 4,
+      "after": 7
+    },
+    {
+      "id": "Q37",
+      "before": 0,
+      "after": 7
+    },
+    {
+      "id": "Q38",
+      "before": 0,
+      "after": 1
+    },
+    {
+      "id": "Q39",
+      "before": 0,
+      "after": 10
+    },
+    {
+      "id": "Q40",
+      "before": 0,
+      "after": 22
+    },
+    {
+      "id": "Q42",
+      "before": 0,
+      "after": 20
+    },
+    {
+      "id": "Q43",
+      "before": 0,
+      "after": 3
+    },
+    {
+      "id": "Q44",
+      "before": 0,
+      "after": 3
+    },
+    {
+      "id": "Q48",
+      "before": 1,
+      "after": 3
+    },
+    {
+      "id": "Q49",
+      "before": 4,
+      "after": 17
+    },
+    {
+      "id": "Q50",
+      "before": 2,
+      "after": 4
+    },
+    {
+      "id": "Q51",
+      "before": 1,
+      "after": 8
+    },
+    {
+      "id": "Q52",
+      "before": 1,
+      "after": 10
+    }
+  ],
+  "warnings": [
+    "Q15: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q16 se abstiene y solo tiene contexto parcial (grado 1)",
+    "Q16: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q21: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q22: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q23 se abstiene y solo tiene contexto parcial (grado 1)",
+    "Q30 se abstiene y solo tiene contexto parcial (grado 1)",
+    "Q30: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q38 se abstiene y solo tiene contexto parcial (grado 1)",
+    "Q38: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q39: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q40: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q42: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q43 se abstiene y solo tiene contexto parcial (grado 1)",
+    "Q43: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)",
+    "Q44 se abstiene y solo tiene contexto parcial (grado 1)",
+    "Q44: completa `idioma_evidencia` y `colecciones` a mano (ahora tiene relevantes)"
+  ],
+  "problems": [],
+  "gold_sha256_before": "8929bd77f15f2c47089f2fdb5ed45dc6d6365a1984d7fcc64b4764ce4692cf68",
+  "written": true,
+  "gold_sha256_after": "b63e9b28914e9a0bdce4d32219978122739da0fe671dba08d6afa4f092f4d83e"
+}
